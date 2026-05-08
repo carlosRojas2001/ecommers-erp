@@ -1,0 +1,2906 @@
+generator client {
+  provider     = "prisma-client-js"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model advances {
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id        BigInt          @db.UnsignedBigInt
+  correlative       String          @unique(map: "advances_correlative_unique") @db.VarChar(255)
+  customer_id       BigInt          @db.UnsignedBigInt
+  payment_method_id BigInt          @db.UnsignedBigInt
+  bank_id           BigInt          @db.UnsignedBigInt
+  operation_number  String          @db.VarChar(255)
+  operation_date    String          @db.VarChar(255)
+  parallel_rate     Decimal         @db.Decimal(10, 2)
+  currency_type_id  BigInt          @db.UnsignedBigInt
+  amount            Decimal         @db.Decimal(10, 2)
+  saldo             Decimal         @db.Decimal(10, 2)
+  status            Int             @default(1)
+  created_at        DateTime?       @db.Timestamp(0)
+  updated_at        DateTime?       @db.Timestamp(0)
+  banks             banks           @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_bank_id_foreign")
+  companies         companies       @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_company_id_foreign")
+  currency_types    currency_types  @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_currency_type_id_foreign")
+  customers         customers       @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_customer_id_foreign")
+  payment_methods   payment_methods @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_payment_method_id_foreign")
+  collections       collections[]
+
+  @@index([bank_id], map: "advances_bank_id_foreign")
+  @@index([company_id], map: "advances_company_id_foreign")
+  @@index([currency_type_id], map: "advances_currency_type_id_foreign")
+  @@index([customer_id], map: "advances_customer_id_foreign")
+  @@index([payment_method_id], map: "advances_payment_method_id_foreign")
+}
+
+model article_images {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  article_id BigInt   @db.UnsignedBigInt
+  url        String   @db.VarChar(500)
+  public_id  String?  @db.VarChar(255)
+  position   Int      @default(0)
+  is_main    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade, map: "fk_article_images_article")
+
+  @@index([article_id], map: "fk_article_images_article")
+}
+
+model article_type {
+  id         BigInt   @id @default(autoincrement())
+  name       String?  @db.VarChar(50)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(dbgenerated("('0000-00-00 00:00:00')")) @db.Timestamp(0)
+}
+
+model articles {
+  id                                                                                  BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
+  cod_fab                                                                             String?                      @db.VarChar(100)
+  description                                                                         String?                      @db.VarChar(255)
+  weight                                                                              Float                        @default(1)
+  with_deduction                                                                      Boolean                      @default(false)
+  series_enabled                                                                      Boolean                      @default(false)
+  measurement_unit_id                                                                 BigInt?                      @db.UnsignedBigInt
+  brand_id                                                                            BigInt?                      @db.UnsignedBigInt
+  category_id                                                                         BigInt?                      @db.UnsignedBigInt
+  sub_category_id                                                                     BigInt?                      @db.UnsignedBigInt
+  currency_type_id                                                                    BigInt?                      @db.UnsignedBigInt
+  company_type_id                                                                     BigInt?                      @db.UnsignedBigInt
+  user_id                                                                             BigInt?                      @db.UnsignedBigInt
+  url_supplier                                                                        String?                      @db.VarChar(255)
+  location                                                                            String?                      @db.VarChar(255)
+  warranty                                                                            String?                      @db.VarChar(255)
+  tariff_rate                                                                         Decimal                      @default(0.00) @db.Decimal(8, 2)
+  igv_applicable                                                                      Boolean                      @default(true)
+  plastic_bag_applicable                                                              Boolean                      @default(false)
+  min_stock                                                                           Int                          @default(0)
+  image_url                                                                           String?                      @db.VarChar(255)
+  purchase_price                                                                      Decimal                      @default(0.00) @db.Decimal(10, 2)
+  public_price                                                                        Decimal                      @default(0.00) @db.Decimal(10, 2)
+  distributor_price                                                                   Decimal                      @default(0.00) @db.Decimal(10, 2)
+  authorized_price                                                                    Decimal                      @default(0.00) @db.Decimal(10, 2)
+  public_price_percent                                                                Decimal                      @default(0.00) @db.Decimal(8, 2)
+  distributor_price_percent                                                           Decimal                      @default(0.00) @db.Decimal(8, 2)
+  authorized_price_percent                                                            Decimal                      @default(0.00) @db.Decimal(8, 2)
+  venta                                                                               Boolean                      @default(true)
+  status                                                                              Int                          @default(1) @db.TinyInt
+  state_modify_article                                                                Int                          @default(0)
+  filt_NameEsp                                                                        String?                      @db.VarChar(255)
+  status_Esp                                                                          Boolean                      @default(false)
+  date_at                                                                             DateTime                     @default(now()) @db.Timestamp(0)
+  last_supplier                                                                       BigInt?                      @default(0)
+  last_date_purchase                                                                  DateTime?                    @db.Date
+  last_entry_guide                                                                    BigInt?
+  article_type_id                                                                     BigInt?                      @default(0)
+  created_at                                                                          DateTime?                    @db.Timestamp(0)
+  updated_at                                                                          DateTime?                    @db.Timestamp(0)
+  is_new_for_web                                                                      Boolean?                     @default(false)
+  has_offer                                                                           Boolean?                     @default(false)
+  offer_price_percent                                                                 Decimal?                     @default(0) @db.Decimal(10, 0)
+  article_images                                                                      article_images[]
+  brands                                                                              brands?                      @relation(fields: [brand_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_brand_id_foreign")
+  categories                                                                          categories?                  @relation(fields: [category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_category_id_foreign")
+  companies                                                                           companies?                   @relation(fields: [company_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_company_type_id_foreign")
+  currency_types                                                                      currency_types?              @relation(fields: [currency_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_currency_type_id_foreign")
+  measurement_units                                                                   measurement_units?           @relation(fields: [measurement_unit_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_measurement_unit_id_foreign")
+  users                                                                               users?                       @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_user_id_foreign")
+  build_detail_pc_tabla                                                               build_detail_pc_tabla[]
+  detail_pc_compatible_tabla_detail_pc_compatible_tabla_article_accesory_idToarticles detail_pc_compatible_tabla[] @relation("detail_pc_compatible_tabla_article_accesory_idToarticles")
+  detail_pc_compatible_tabla_detail_pc_compatible_tabla_article_major_idToarticles    detail_pc_compatible_tabla[] @relation("detail_pc_compatible_tabla_article_major_idToarticles")
+  detail_purchase_guides                                                              detail_purchase_guides[]
+  dispatch_article                                                                    dispatch_article[]
+  dispatch_article_serials                                                            dispatch_article_serials[]
+  entry_guide_article                                                                 entry_guide_article[]
+  entry_item_serials                                                                  entry_item_serials[]
+  favorites                                                                           favorites[]
+  order_items                                                                         order_items[]
+  purchase_order_article                                                              purchase_order_article[]
+  reference_codes                                                                     reference_codes[]
+  reviews                                                                             reviews[]
+  sale_article                                                                        sale_article[]
+  sale_item_serial                                                                    sale_item_serial[]
+  visible_articles                                                                    visible_articles[]
+  warranties                                                                          warranties[]
+
+  @@index([brand_id], map: "articles_brand_id_foreign")
+  @@index([category_id], map: "articles_category_id_foreign")
+  @@index([company_type_id], map: "articles_company_type_id_foreign")
+  @@index([currency_type_id], map: "articles_currency_type_id_foreign")
+  @@index([measurement_unit_id], map: "articles_measurement_unit_id_foreign")
+  @@index([sub_category_id], map: "articles_sub_category_id_foreign")
+  @@index([user_id], map: "articles_user_id_foreign")
+}
+
+model banks {
+  id                 BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  name               String         @db.VarChar(50)
+  account_number     String         @db.VarChar(30)
+  currency_type_id   BigInt         @db.UnsignedBigInt
+  account_accounting String?        @db.VarChar(20)
+  cod_sunat          Int?           @default(0)
+  user_id            BigInt         @db.UnsignedBigInt
+  company_id         BigInt         @db.UnsignedBigInt
+  status             Int            @default(1)
+  created_at         DateTime?      @db.Timestamp(0)
+  updated_at         DateTime?      @db.Timestamp(0)
+  advances           advances[]
+  companies          companies      @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "banks_company_id_foreign")
+  currency_types     currency_types @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "banks_currency_type_id_foreign")
+  users              users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "banks_user_id_foreign")
+  collections        collections[]
+
+  @@index([company_id], map: "banks_company_id_foreign")
+  @@index([currency_type_id], map: "banks_currency_type_id_foreign")
+  @@index([user_id], map: "banks_user_id_foreign")
+}
+
+model branch_phones {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  branch_id  BigInt    @db.UnsignedBigInt
+  phone      String    @db.VarChar(12)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "branch_phones_branch_id_foreign")
+
+  @@index([branch_id], map: "branch_phones_branch_id_foreign")
+}
+
+model branches {
+  id                                                                                BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  cia_id                                                                            BigInt                     @db.UnsignedBigInt
+  name                                                                              String                     @db.VarChar(100)
+  address                                                                           String                     @db.VarChar(100)
+  ubigeo                                                                            String?                    @db.VarChar(10)
+  email                                                                             String?                    @db.VarChar(100)
+  start_date                                                                        DateTime                   @db.Date
+  serie                                                                             String                     @db.VarChar(255)
+  status                                                                            Int                        @default(1)
+  st_sales                                                                          Boolean                    @default(false)
+  st_dispatch_notes                                                                 Boolean                    @default(false)
+  st_petty_cash                                                                     Boolean                    @default(false)
+  st_warranties                                                                     Boolean?                   @default(false)
+  created_at                                                                        DateTime?                  @db.Timestamp(0)
+  updated_at                                                                        DateTime?                  @db.Timestamp(0)
+  branch_phones                                                                     branch_phones[]
+  companies                                                                         companies                  @relation(fields: [cia_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "branches_cia_id_foreign")
+  dispatch_article_serials_dispatch_article_serials_destination_branch_idTobranches dispatch_article_serials[] @relation("dispatch_article_serials_destination_branch_idTobranches")
+  dispatch_article_serials_dispatch_article_serials_origin_branch_idTobranches      dispatch_article_serials[] @relation("dispatch_article_serials_origin_branch_idTobranches")
+  dispatch_notes_dispatch_notes_branch_idTobranches                                 dispatch_notes[]           @relation("dispatch_notes_branch_idTobranches")
+  dispatch_notes_dispatch_notes_destination_branch_idTobranches                     dispatch_notes[]           @relation("dispatch_notes_destination_branch_idTobranches")
+  entry_guides                                                                      entry_guides[]
+  entry_item_serials                                                                entry_item_serials[]
+  kardex                                                                            kardex[]
+  petty_cash_receipt                                                                petty_cash_receipt[]
+  purchase                                                                          purchase[]
+  purchase_orders                                                                   purchase_orders[]
+  sales                                                                             sales[]
+  series                                                                            series[]
+  transaction_logs                                                                  transaction_logs[]
+  user_assignments                                                                  user_assignments[]
+  visible_articles                                                                  visible_articles[]
+  warranties_warranties_branch_idTobranches                                         warranties[]               @relation("warranties_branch_idTobranches")
+  warranties_warranties_branch_sale_idTobranches                                    warranties[]               @relation("warranties_branch_sale_idTobranches")
+
+  @@index([cia_id], map: "branches_cia_id_foreign")
+}
+
+model brands {
+  id         BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String     @db.VarChar(30)
+  status     Int        @default(1)
+  created_at DateTime?  @db.Timestamp(0)
+  updated_at DateTime?  @db.Timestamp(0)
+  image_url  String?    @db.VarChar(255)
+  articles   articles[]
+}
+
+model build_detail_pc_tabla {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  build_pc_id    BigInt         @db.UnsignedBigInt
+  article_id     BigInt         @db.UnsignedBigInt
+  quantity       Int
+  status         Boolean        @default(true)
+  created_at     DateTime?      @db.Timestamp(0)
+  updated_at     DateTime?      @db.Timestamp(0)
+  articles       articles       @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "build_detail_pc_tabla_article_id_foreign")
+  build_pc_tabla build_pc_tabla @relation(fields: [build_pc_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "build_detail_pc_tabla_build_pc_id_foreign")
+
+  @@index([article_id], map: "build_detail_pc_tabla_article_id_foreign")
+  @@index([build_pc_id], map: "build_detail_pc_tabla_build_pc_id_foreign")
+}
+
+model build_pc_tabla {
+  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id            BigInt                  @db.UnsignedBigInt
+  name                  String                  @db.VarChar(255)
+  description           String                  @db.VarChar(255)
+  min                   Float?                  @default(0)
+  max                   Float?                  @default(0)
+  total_price           Float
+  user_id               Int
+  status                Boolean                 @default(true)
+  created_at            DateTime?               @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  build_detail_pc_tabla build_detail_pc_tabla[]
+  companies             companies               @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "build_pc_tabla_company_id_foreign")
+
+  @@index([company_id], map: "build_pc_tabla_company_id_foreign")
+}
+
+model cache {
+  key        String @id @db.VarChar(255)
+  value      String @db.MediumText
+  expiration Int
+}
+
+model cache_locks {
+  key        String @id @db.VarChar(255)
+  owner      String @db.VarChar(255)
+  expiration Int
+}
+
+model categories {
+  id             BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  name           String           @db.VarChar(30)
+  status         Int              @default(1)
+  st_concept     Boolean          @default(false)
+  created_at     DateTime?        @db.Timestamp(0)
+  updated_at     DateTime?        @db.Timestamp(0)
+  image_url      String?          @db.VarChar(255)
+  articles       articles[]
+  sub_categories sub_categories[]
+}
+
+model clients {
+  id                  BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  names               String      @db.VarChar(100)
+  lastnames           String      @db.VarChar(100)
+  email               String      @unique(map: "clients_email_unique") @db.VarChar(150)
+  phone               String?     @db.VarChar(20)
+  document_type       String?     @db.VarChar(20)
+  document_number     String?     @db.VarChar(20)
+  google_id           String?     @unique(map: "clients_google_id_unique") @db.VarChar(255)
+  password            String?     @db.VarChar(255)
+  status              Int         @default(1)
+  created_at          DateTime    @default(now()) @db.Timestamp(0)
+  updated_at          DateTime    @default(now()) @db.Timestamp(0)
+  role                String      @default("client") @db.VarChar(20)
+  reset_token         String?     @db.VarChar(255)
+  reset_token_expires DateTime?   @db.Timestamp(0)
+  favorites           favorites[]
+  orders              orders[]
+  reviews             reviews[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model clipro {
+  CIA          Int            @default(0)
+  CODIGO       Int            @default(0)
+  TIPDOC       Int?           @default(0)
+  NRODOC       String?        @default("") @db.VarChar(11)
+  CODGRU       Int?           @default(0)
+  TIPO         String?        @default("") @db.Char(1)
+  RAZSOC       String?        @default("") @db.VarChar(200)
+  APEPAT       String?        @default("") @db.VarChar(35)
+  APEMAT       String?        @default("") @db.VarChar(35)
+  NOMBRE       String?        @default("") @db.VarChar(40)
+  NOMCON       String?        @default("") @db.VarChar(25)
+  APECON       String?        @default("") @db.VarChar(25)
+  DIRECC       String?        @default("") @db.VarChar(200)
+  CODPAI       Int?           @default(0)
+  CODDEP       String?        @default("") @db.Char(2)
+  CODPRO       String?        @default("") @db.Char(2)
+  CODDIS       String?        @default("") @db.Char(2)
+  CODCIU       String?        @default("") @db.VarChar(4)
+  CODVEN       Int?           @default(0)
+  TELEFO       String?        @default("") @db.VarChar(50)
+  FAX          String?        @default("") @db.VarChar(25)
+  CELULAR      String?        @default("") @db.VarChar(25)
+  NEXTEL       String?        @default("") @db.VarChar(25)
+  LINEA        Float?         @default(0.00) @db.Float
+  OTROS        String?        @db.Text
+  TIPREG       Int?           @default(0)
+  FECINS       DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
+  USRALT       Int?           @default(0)
+  FECALT       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRMOD       Int?           @default(0)
+  FECMOD       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRDES       Int?           @default(0)
+  FECDES       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  SIT          Int?           @default(0)
+  STRETE       Int?           @default(0)
+  FECRET       DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
+  cliprocorreo cliprocorreo[]
+
+  @@id([CIA, CODIGO])
+  @@index([CIA, NRODOC], map: "CIA")
+  @@index([NRODOC], map: "NRODOC")
+  @@index([RAZSOC], map: "RAZSOC")
+}
+
+model cliprocorreo {
+  CIA    Int    @default(0)
+  CODIGO Int    @default(0)
+  CORREO String @default("") @db.VarChar(50)
+  clipro clipro @relation(fields: [CIA, CODIGO], references: [CIA, CODIGO], onDelete: Cascade, map: "FK_cliprocorreo_1")
+
+  @@id([CIA, CODIGO, CORREO])
+  @@index([CIA, CODIGO], map: "IDX_cliprocorreo_2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cliprofamilia {
+  CIA            Int            @default(0)
+  CODIGO         Int            @default(0)
+  CODPER         Int            @default(0)
+  CODFAM         Int            @default(0)
+  APEPAT         String?        @db.VarChar(25)
+  APEMAT         String?        @db.VarChar(25)
+  NOMBRES        String?        @db.VarChar(35)
+  CODPAR         Int?           @default(0)
+  CODSEX         Int?           @default(0)
+  FECNAC         DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
+  clipropersonal clipropersonal @relation(fields: [CIA, CODIGO, CODPER], references: [CIA, CODIGO, CODPER], onDelete: Cascade, map: "cliprofamilia_ibfk_1")
+
+  @@id([CIA, CODIGO, CODPER, CODFAM])
+}
+
+model cliprogrupos {
+  CIA Int     @default(0)
+  COD Int     @default(0)
+  DES String? @default("") @db.VarChar(40)
+
+  @@id([CIA, COD])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model clipropersonal {
+  CIA           Int             @default(0)
+  CODIGO        Int             @default(0)
+  CODPER        Int             @default(0)
+  APEPAT        String?         @db.VarChar(25)
+  APEMAT        String?         @db.VarChar(25)
+  NOMBRES       String?         @db.VarChar(35)
+  CODCAR        Int?            @default(0)
+  CODSUC        Int?            @default(0)
+  FECNAC        DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
+  CODSEX        Int?            @default(0)
+  cliprofamilia cliprofamilia[]
+
+  @@id([CIA, CODIGO, CODPER])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cliprosucursales {
+  CIA    Int     @default(0)
+  CODIGO Int     @default(0)
+  CODSUC Int     @default(0)
+  RAZSOC String? @db.VarChar(60)
+  NOMCON String? @db.VarChar(25)
+  DIRECC String? @db.VarChar(60)
+  CODDEP String? @db.Char(2)
+  CODPRO String? @db.Char(2)
+  CODDIS String? @db.Char(2)
+  CODCIU String? @db.VarChar(4)
+  CODVEN Int?    @default(0)
+  TELEFO String? @db.VarChar(35)
+  FAX    String? @db.VarChar(35)
+  SIT    Int?    @default(0)
+
+  @@id([CIA, CODIGO, CODSUC])
+}
+
+model collections {
+  id                      BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id              BigInt           @db.UnsignedBigInt
+  sale_id                 BigInt           @db.UnsignedBigInt
+  sale_document_type_id   BigInt           @db.UnsignedBigInt
+  sale_serie              String           @db.VarChar(6)
+  sale_correlative        String           @db.VarChar(10)
+  payment_method_id       BigInt           @db.UnsignedBigInt
+  payment_date            DateTime         @db.Date
+  currency_type_id        BigInt           @db.UnsignedBigInt
+  parallel_rate           Decimal          @db.Decimal(15, 6)
+  amount                  Decimal          @db.Decimal(15, 2)
+  change                  Decimal?         @db.Decimal(15, 2)
+  digital_wallet_id       BigInt?          @db.UnsignedBigInt
+  bank_id                 BigInt?          @db.UnsignedBigInt
+  operation_date          DateTime?        @db.Date
+  operation_number        String?          @db.VarChar(50)
+  lote_number             String?          @db.VarChar(30)
+  for_digits              String?          @db.VarChar(4)
+  credit_document_type_id Int?
+  credit_serie            String?          @db.VarChar(6)
+  credit_correlative      String?          @db.VarChar(10)
+  status                  Int              @default(1)
+  rounding                Decimal          @default(0.00) @db.Decimal(4, 2)
+  advance_id              BigInt?          @db.UnsignedBigInt
+  created_at              DateTime?        @db.Timestamp(0)
+  updated_at              DateTime?        @db.Timestamp(0)
+  advances                advances?        @relation(fields: [advance_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_advance_id_foreign")
+  banks                   banks?           @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_bank_id_foreign")
+  companies               companies        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_company_id_foreign")
+  currency_types          currency_types   @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_currency_type_id_foreign")
+  digital_wallets         digital_wallets? @relation(fields: [digital_wallet_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_digital_wallet_id_foreign")
+  payment_methods         payment_methods  @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_payment_method_id_foreign")
+  document_types          document_types   @relation(fields: [sale_document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_sale_document_type_id_foreign")
+  sales                   sales            @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_sale_id_foreign")
+
+  @@index([advance_id], map: "collections_advance_id_foreign")
+  @@index([bank_id], map: "collections_bank_id_foreign")
+  @@index([company_id], map: "collections_company_id_foreign")
+  @@index([currency_type_id], map: "collections_currency_type_id_foreign")
+  @@index([digital_wallet_id], map: "collections_digital_wallet_id_foreign")
+  @@index([payment_method_id], map: "collections_payment_method_id_foreign")
+  @@index([sale_document_type_id], map: "collections_sale_document_type_id_foreign")
+  @@index([sale_id], map: "collections_sale_id_foreign")
+}
+
+model companies {
+  id                       BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  ruc                      String               @db.VarChar(11)
+  company_name             String               @db.VarChar(80)
+  address                  String               @db.VarChar(150)
+  start_date               DateTime             @db.Date
+  default_currency_type_id BigInt               @db.UnsignedBigInt
+  min_profit               Decimal              @db.Decimal(4, 2)
+  max_profit               Decimal              @db.Decimal(4, 2)
+  ubigeo                   String               @db.VarChar(6)
+  status                   Int                  @default(1)
+  usuario_sol              String               @db.VarChar(100)
+  clave_sol                String               @db.VarChar(100)
+  detrac_cta_banco         String?              @db.VarChar(100)
+  ctaigvnw                 String?              @default("") @db.VarChar(8)
+  ctartanw                 String?              @default("") @db.VarChar(8)
+  ctaegrnw                 String?              @default("") @db.VarChar(8)
+  ctaingnw                 String?              @default("") @db.VarChar(8)
+  created_at               DateTime?            @db.Timestamp(0)
+  updated_at               DateTime?            @db.Timestamp(0)
+  advances                 advances[]
+  articles                 articles[]
+  banks                    banks[]
+  branches                 branches[]
+  build_pc_tabla           build_pc_tabla[]
+  collections              collections[]
+  currency_types           currency_types       @relation(fields: [default_currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "default_currency_type_id_foreign")
+  digital_wallets          digital_wallets[]
+  dispatch_notes           dispatch_notes[]
+  entry_guides             entry_guides[]
+  kardex                   kardex[]
+  petty_cash_motive        petty_cash_motive[]
+  petty_cash_receipt       petty_cash_receipt[]
+  purchase                 purchase[]
+  purchase_orders          purchase_orders[]
+  sales                    sales[]
+  series                   series[]
+  transaction_logs         transaction_logs[]
+  user_assignments         user_assignments[]
+  visible_articles         visible_articles[]
+  warranties               warranties[]
+
+  @@index([default_currency_type_id], map: "default_currency_type_id_foreign")
+}
+
+model cpe_cia {
+  cia_codigo          Int     @id
+  cia_descri          String? @db.VarChar(250)
+  cia_estado          String? @db.VarChar(250)
+  cia_id              String? @db.VarChar(250)
+  cia_clave           String? @db.VarChar(250)
+  cia_ruc             String? @db.VarChar(250)
+  cia_ruta_sfs        String? @db.VarChar(250)
+  cia_correo          String? @db.VarChar(250)
+  cia_pwd_correo      String? @db.VarChar(250)
+  cia_pwd_certificado String? @db.VarChar(250)
+  cia_fecven_cert     String? @db.VarChar(250)
+  cia_name_cert       String? @db.VarChar(250)
+  cia_ubigeo          String? @db.VarChar(250)
+  cia_direccion       String? @db.VarChar(250)
+  cia_departamento    String? @db.VarChar(250)
+  cia_provincia       String? @db.VarChar(250)
+  cia_distrito        String? @db.VarChar(250)
+  cia_username        String? @db.VarChar(250)
+  cia_password        String? @db.VarChar(250)
+}
+
+model cpe_doi {
+  doi_codigo      String  @id @db.Char(2)
+  doi_Descripcion String? @db.VarChar(50)
+  doi_Estado      String? @db.Char(1)
+
+  @@index([doi_Descripcion], map: "IND_DOI")
+}
+
+model cpe_estado {
+  cod Int     @id
+  des String? @db.VarChar(50)
+}
+
+model cpe_tipdoc {
+  td_codigo      String  @id @db.Char(2)
+  td_descripcion String? @db.VarChar(250)
+  td_estado      String? @db.Char(1)
+  td_equi        Int?
+
+  @@index([td_descripcion], map: "IND_TP_DESCRI")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cs_medpag {
+  cod Int     @id
+  des String? @db.VarChar(180)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cs_tabdoc {
+  COD Int     @id
+  DES String? @db.VarChar(200)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model cs_tablib {
+  COD Float?
+  DES String? @db.VarChar(112)
+
+  @@ignore
+}
+
+model currency_types {
+  id                BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  name              String            @db.VarChar(20)
+  commercial_symbol String            @db.VarChar(4)
+  sunat_symbol      String            @db.VarChar(4)
+  status            Int               @default(1)
+  created_at        DateTime?         @db.Timestamp(0)
+  updated_at        DateTime?         @db.Timestamp(0)
+  advances          advances[]
+  articles          articles[]
+  banks             banks[]
+  collections       collections[]
+  companies         companies[]
+  entry_guides      entry_guides[]
+  purchase_orders   purchase_orders[]
+  sales             sales[]
+}
+
+model customer_addresses {
+  id             BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  customer_id    BigInt           @db.UnsignedBigInt
+  address        String           @db.VarChar(255)
+  department_id  Int
+  province_id    Int
+  district_id    Int
+  status         Int              @default(1)
+  st_principal   Boolean          @default(false)
+  created_at     DateTime?        @db.Timestamp(0)
+  updated_at     DateTime?        @db.Timestamp(0)
+  customers      customers        @relation(fields: [customer_id], references: [id], onDelete: Cascade, map: "customer_addresses_customer_id_foreign")
+  dispatch_notes dispatch_notes[]
+
+  @@index([customer_id], map: "customer_addresses_customer_id_foreign")
+}
+
+model customer_document_types {
+  id           BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  cod_sunat    Int
+  description  String      @db.VarChar(40)
+  abbreviation String      @db.VarChar(10)
+  st_driver    Boolean     @default(true)
+  status       Int         @default(1)
+  created_at   DateTime?   @db.Timestamp(0)
+  updated_at   DateTime?   @db.Timestamp(0)
+  customers    customers[]
+  drivers      drivers[]
+}
+
+model customer_emails {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  email       String    @db.VarChar(100)
+  customer_id BigInt    @db.UnsignedBigInt
+  status      Int       @default(1)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+  customers   customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, map: "customer_emails_customer_id_foreign")
+
+  @@index([customer_id], map: "customer_emails_customer_id_foreign")
+}
+
+model customer_phones {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  phone       String    @db.VarChar(9)
+  customer_id BigInt    @db.UnsignedBigInt
+  status      Int       @default(1)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+  customers   customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, map: "customer_phones_customer_id_foreign")
+
+  @@index([customer_id], map: "customer_phones_customer_id_foreign")
+}
+
+model customer_portfolios {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  customer_id BigInt    @db.UnsignedBigInt
+  user_id     BigInt    @db.UnsignedBigInt
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+  customers   customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, map: "customer_portfolios_customer_id_foreign")
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "customer_portfolios_user_id_foreign")
+
+  @@index([customer_id], map: "customer_portfolios_customer_id_foreign")
+  @@index([user_id], map: "customer_portfolios_user_id_foreign")
+}
+
+model customer_types {
+  id          BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  description String      @db.VarChar(30)
+  status      Int         @default(1)
+  created_at  DateTime?   @db.Timestamp(0)
+  updated_at  DateTime?   @db.Timestamp(0)
+  customers   customers[]
+}
+
+model customers {
+  id                                                   BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  record_type_id                                       BigInt?                 @db.UnsignedBigInt
+  customer_document_type_id                            BigInt                  @db.UnsignedBigInt
+  document_number                                      String                  @db.VarChar(11)
+  company_name                                         String?                 @db.VarChar(100)
+  name                                                 String?                 @db.VarChar(50)
+  lastname                                             String?                 @db.VarChar(50)
+  second_lastname                                      String?                 @db.VarChar(50)
+  customer_type_id                                     BigInt?                 @db.UnsignedBigInt
+  contact                                              String?                 @db.VarChar(100)
+  is_withholding_applicable                            Boolean?                @default(false)
+  status                                               Int                     @default(1)
+  st_assigned                                          Int                     @default(0)
+  st_sales                                             Boolean                 @default(true)
+  created_at                                           DateTime?               @db.Timestamp(0)
+  updated_at                                           DateTime?               @db.Timestamp(0)
+  advances                                             advances[]
+  customer_addresses                                   customer_addresses[]
+  customer_emails                                      customer_emails[]
+  customer_phones                                      customer_phones[]
+  customer_portfolios                                  customer_portfolios[]
+  customer_document_types                              customer_document_types @relation(fields: [customer_document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "customers_customer_document_type_id_foreign")
+  customer_types                                       customer_types?         @relation(fields: [customer_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "customers_customer_type_id_foreign")
+  record_types                                         record_types?           @relation(fields: [record_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "customers_record_type_id_foreign")
+  dispatch_notes_dispatch_notes_customer_idTocustomers dispatch_notes[]        @relation("dispatch_notes_customer_idTocustomers")
+  dispatch_notes_dispatch_notes_supplier_idTocustomers dispatch_notes[]        @relation("dispatch_notes_supplier_idTocustomers")
+  entry_guides                                         entry_guides[]
+  purchase_orders                                      purchase_orders[]
+  sales                                                sales[]
+  warranties_warranties_customer_idTocustomers         warranties[]            @relation("warranties_customer_idTocustomers")
+  warranties_warranties_supplier_idTocustomers         warranties[]            @relation("warranties_supplier_idTocustomers")
+
+  @@unique([customer_document_type_id, document_number], map: "customers_document_number_unique")
+  @@index([customer_document_type_id], map: "customers_customer_document_type_id_foreign")
+  @@index([customer_type_id], map: "customers_customer_type_id_foreign")
+  @@index([record_type_id], map: "customers_record_type_id_foreign")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model departments {
+  coddep String? @unique(map: "coddep") @db.Char(8)
+  nomdep String? @db.VarChar(80)
+
+  @@index([coddep], map: "coddep_2")
+  @@ignore
+}
+
+model det_entry_guide_purchase_order {
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  purchase_order_id BigInt          @db.UnsignedBigInt
+  entry_guide_id    BigInt          @db.UnsignedBigInt
+  created_at        DateTime?       @db.Timestamp(0)
+  updated_at        DateTime?       @db.Timestamp(0)
+  entry_guides      entry_guides    @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "det_entry_guide_purchase_order_entry_guide_id_foreign")
+  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "det_entry_guide_purchase_order_purchase_order_id_foreign")
+
+  @@index([entry_guide_id], map: "det_entry_guide_purchase_order_entry_guide_id_foreign")
+  @@index([purchase_order_id], map: "det_entry_guide_purchase_order_purchase_order_id_foreign")
+}
+
+model det_voucher_purchase {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  voucher_id  BigInt    @db.UnsignedBigInt
+  purchase_id BigInt    @db.UnsignedBigInt
+  amount      Decimal   @db.Decimal(10, 2)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([purchase_id], map: "det_voucher_purchase_purchase_id_foreign")
+  @@index([voucher_id], map: "det_voucher_purchase_voucher_id_foreign")
+}
+
+model detail_pc_compatible_tabla {
+  id                                                                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  article_major_id                                                  BigInt    @db.UnsignedBigInt
+  article_accesory_id                                               BigInt    @db.UnsignedBigInt
+  status                                                            Boolean   @default(true)
+  created_at                                                        DateTime? @db.Timestamp(0)
+  updated_at                                                        DateTime? @db.Timestamp(0)
+  articles_detail_pc_compatible_tabla_article_accesory_idToarticles articles  @relation("detail_pc_compatible_tabla_article_accesory_idToarticles", fields: [article_accesory_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "detail_pc_compatible_tabla_article_accesory_id_foreign")
+  articles_detail_pc_compatible_tabla_article_major_idToarticles    articles  @relation("detail_pc_compatible_tabla_article_major_idToarticles", fields: [article_major_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "detail_pc_compatible_tabla_article_major_id_foreign")
+
+  @@index([article_accesory_id], map: "detail_pc_compatible_tabla_article_accesory_id_foreign")
+  @@index([article_major_id], map: "detail_pc_compatible_tabla_article_major_id_foreign")
+}
+
+model detail_purchase_guides {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  article_id      BigInt    @db.UnsignedBigInt
+  purchase_id     BigInt    @db.UnsignedBigInt
+  description     String    @db.VarChar(255)
+  cantidad        Int
+  precio_costo    Decimal   @db.Decimal(8, 2)
+  sub_total       Decimal   @db.Decimal(8, 2)
+  descuento       Decimal   @db.Decimal(8, 2)
+  total           Decimal   @db.Decimal(12, 4)
+  cantidad_update Float     @default(0)
+  process_status  String    @db.VarChar(255)
+  created_at      DateTime? @db.Timestamp(0)
+  updated_at      DateTime? @db.Timestamp(0)
+  articles        articles  @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "detail_purchase_guides_article_id_foreign")
+  purchase        purchase  @relation(fields: [purchase_id], references: [id], onDelete: Cascade, map: "detail_purchase_guides_purchase_id_foreign")
+
+  @@index([article_id], map: "detail_purchase_guides_article_id_foreign")
+  @@index([purchase_id], map: "detail_purchase_guides_purchase_id_foreign")
+}
+
+model detractions {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  cod_sunat   Int
+  description String    @db.VarChar(150)
+  percentage  Decimal   @db.Decimal(8, 2)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+}
+
+model digital_wallets {
+  id                 BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  name               String        @db.VarChar(30)
+  account_accounting String?       @db.VarChar(20)
+  phone              String        @db.VarChar(9)
+  company_id         BigInt        @db.UnsignedBigInt
+  user_id            BigInt        @db.UnsignedBigInt
+  status             Int           @default(1)
+  created_at         DateTime?     @db.Timestamp(0)
+  updated_at         DateTime?     @db.Timestamp(0)
+  collections        collections[]
+  companies          companies     @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "digital_wallets_company_id_foreign")
+  users              users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "digital_wallets_user_id_foreign")
+
+  @@index([company_id], map: "digital_wallets_company_id_foreign")
+  @@index([user_id], map: "digital_wallets_user_id_foreign")
+}
+
+model dispatch_article {
+  id              BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at      DateTime?      @db.Timestamp(0)
+  updated_at      DateTime?      @db.Timestamp(0)
+  dispatch_id     BigInt         @db.UnsignedBigInt
+  article_id      BigInt         @db.UnsignedBigInt
+  name            String         @db.VarChar(255)
+  quantity        Decimal        @db.Decimal(8, 2)
+  weight          Decimal?       @db.Decimal(8, 2)
+  saldo           Decimal?       @db.Decimal(8, 2)
+  subtotal_weight Decimal?       @db.Decimal(8, 2)
+  articles        articles       @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "dispatch_article_article_id_foreign")
+  dispatch_notes  dispatch_notes @relation(fields: [dispatch_id], references: [id], onDelete: Cascade, map: "dispatch_article_dispatch_id_foreign")
+
+  @@index([article_id], map: "dispatch_article_article_id_foreign")
+  @@index([dispatch_id], map: "dispatch_article_dispatch_id_foreign")
+}
+
+model dispatch_article_serials {
+  id                                                                BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  dispatch_note_id                                                  BigInt            @db.UnsignedBigInt
+  article_id                                                        BigInt            @db.UnsignedBigInt
+  serial                                                            String            @unique(map: "dispatch_article_serials_serial_unique") @db.VarChar(255)
+  status                                                            Int               @default(1)
+  emission_reasons_id                                               BigInt?           @db.UnsignedBigInt
+  origin_branch_id                                                  BigInt?           @db.UnsignedBigInt
+  destination_branch_id                                             BigInt?           @db.UnsignedBigInt
+  created_at                                                        DateTime?         @db.Timestamp(0)
+  updated_at                                                        DateTime?         @db.Timestamp(0)
+  articles                                                          articles          @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_article_id_foreign")
+  branches_dispatch_article_serials_destination_branch_idTobranches branches?         @relation("dispatch_article_serials_destination_branch_idTobranches", fields: [destination_branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_destination_branch_id_foreign")
+  dispatch_notes                                                    dispatch_notes    @relation(fields: [dispatch_note_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_dispatch_note_id_foreign")
+  emission_reasons                                                  emission_reasons? @relation(fields: [emission_reasons_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_emission_reasons_id_foreign")
+  branches_dispatch_article_serials_origin_branch_idTobranches      branches?         @relation("dispatch_article_serials_origin_branch_idTobranches", fields: [origin_branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_origin_branch_id_foreign")
+
+  @@index([article_id], map: "dispatch_article_serials_article_id_foreign")
+  @@index([destination_branch_id], map: "dispatch_article_serials_destination_branch_id_foreign")
+  @@index([dispatch_note_id], map: "dispatch_article_serials_dispatch_note_id_foreign")
+  @@index([emission_reasons_id], map: "dispatch_article_serials_emission_reasons_id_foreign")
+  @@index([origin_branch_id], map: "dispatch_article_serials_origin_branch_id_foreign")
+}
+
+model dispatch_notes {
+  id                                                                       BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  cia_id                                                                   BigInt?                    @db.UnsignedBigInt
+  branch_id                                                                BigInt?                    @db.UnsignedBigInt
+  document_type_id                                                         BigInt?                    @db.UnsignedBigInt
+  serie                                                                    String?                    @db.VarChar(255)
+  correlativo                                                              String                     @db.VarChar(255)
+  customer_id                                                              BigInt?                    @db.UnsignedBigInt
+  emission_reason_id                                                       BigInt?                    @db.UnsignedBigInt
+  description                                                              String?                    @db.Text
+  destination_branch_client                                                BigInt?                    @db.UnsignedBigInt
+  destination_branch_id                                                    BigInt?                    @db.UnsignedBigInt
+  transport_id                                                             BigInt?                    @db.UnsignedBigInt
+  observations                                                             String?                    @db.Text
+  transfer_type                                                            Int?
+  num_orden_compra                                                         String?                    @db.VarChar(20)
+  reference_document_type_id                                               BigInt?                    @db.UnsignedBigInt
+  doc_referencia                                                           String?                    @db.VarChar(255)
+  num_referencia                                                           String?                    @db.VarChar(255)
+  date_referencia                                                          DateTime?                  @db.Date
+  status                                                                   Boolean?                   @default(true)
+  stage                                                                    Int?                       @default(0)
+  cod_conductor                                                            BigInt?                    @db.UnsignedBigInt
+  license_plate                                                            String?                    @db.VarChar(255)
+  total_weight                                                             Decimal?                   @db.Decimal(10, 2)
+  vehicle_type                                                             Int?
+  supplier_id                                                              BigInt?                    @db.UnsignedBigInt
+  address_supplier_id                                                      Int?
+  transfer_date                                                            DateTime?                  @db.Date
+  arrival_date                                                             DateTime?                  @db.Date
+  estado_sunat                                                             String?                    @db.VarChar(20)
+  fecha_aceptacion                                                         DateTime?                  @db.DateTime(0)
+  respuesta_sunat                                                          String?                    @db.Text
+  created_at                                                               DateTime?                  @db.Timestamp(0)
+  updated_at                                                               DateTime?                  @db.Timestamp(0)
+  dispatch_article                                                         dispatch_article[]
+  dispatch_article_serials                                                 dispatch_article_serials[]
+  branches_dispatch_notes_branch_idTobranches                              branches?                  @relation("dispatch_notes_branch_idTobranches", fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_branch_id_foreign")
+  companies                                                                companies?                 @relation(fields: [cia_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_cia_id_foreign")
+  drivers                                                                  drivers?                   @relation(fields: [cod_conductor], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_cod_conductor_foreign")
+  customers_dispatch_notes_customer_idTocustomers                          customers?                 @relation("dispatch_notes_customer_idTocustomers", fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_customer_id_foreign")
+  customer_addresses                                                       customer_addresses?        @relation(fields: [destination_branch_client], references: [id], map: "dispatch_notes_destination_branch_client_foreign")
+  branches_dispatch_notes_destination_branch_idTobranches                  branches?                  @relation("dispatch_notes_destination_branch_idTobranches", fields: [destination_branch_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_destination_branch_id_foreign")
+  document_types_dispatch_notes_document_type_idTodocument_types           document_types?            @relation("dispatch_notes_document_type_idTodocument_types", fields: [document_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_document_type_id_foreign")
+  document_types_dispatch_notes_reference_document_type_idTodocument_types document_types?            @relation("dispatch_notes_reference_document_type_idTodocument_types", fields: [reference_document_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_reference_document_type_id_foreign")
+  customers_dispatch_notes_supplier_idTocustomers                          customers?                 @relation("dispatch_notes_supplier_idTocustomers", fields: [supplier_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_supplier_id_foreign")
+  transport_companies                                                      transport_companies?       @relation(fields: [transport_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_transport_id_foreign")
+
+  @@unique([cia_id, branch_id, document_type_id, serie, correlativo], map: "cia_id")
+  @@index([branch_id], map: "dispatch_notes_branch_id_foreign")
+  @@index([cod_conductor], map: "dispatch_notes_cod_conductor_foreign")
+  @@index([customer_id], map: "dispatch_notes_customer_id_foreign")
+  @@index([destination_branch_client], map: "dispatch_notes_destination_branch_client_foreign")
+  @@index([destination_branch_id], map: "dispatch_notes_destination_branch_id_foreign")
+  @@index([document_type_id], map: "dispatch_notes_document_type_id_foreign")
+  @@index([emission_reason_id], map: "dispatch_notes_emission_reason_id_foreign")
+  @@index([reference_document_type_id], map: "dispatch_notes_reference_document_type_id_foreign")
+  @@index([supplier_id], map: "dispatch_notes_supplier_id_foreign")
+  @@index([transport_id], map: "dispatch_notes_transport_id_foreign")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model districts {
+  coddep String? @db.Char(8)
+  codpro String? @db.Char(8)
+  coddis String? @db.Char(8)
+  nomdis String? @db.VarChar(140)
+
+  @@unique([coddep, codpro, coddis], map: "coddep")
+  @@index([coddep, codpro, coddis], map: "coddep_2")
+  @@ignore
+}
+
+model document_types {
+  id                                                                       BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  cod_sunat                                                                Int
+  description                                                              String             @db.VarChar(40)
+  abbreviation                                                             String             @db.VarChar(10)
+  st_sales                                                                 Boolean            @default(true)
+  st_purchases                                                             Boolean            @default(true)
+  st_collections                                                           Boolean            @default(true)
+  st_invoices                                                              Boolean            @default(false)
+  st_transfers                                                             Boolean            @default(false)
+  st_petty_cash                                                            Boolean            @default(false)
+  st_document_sales                                                        Boolean            @default(false)
+  st_almacen                                                               Boolean            @default(false)
+  st_references_sales                                                      Boolean            @default(false)
+  status                                                                   Int                @default(1)
+  created_at                                                               DateTime?          @db.Timestamp(0)
+  updated_at                                                               DateTime?          @db.Timestamp(0)
+  collections                                                              collections[]
+  dispatch_notes_dispatch_notes_document_type_idTodocument_types           dispatch_notes[]   @relation("dispatch_notes_document_type_idTodocument_types")
+  dispatch_notes_dispatch_notes_reference_document_type_idTodocument_types dispatch_notes[]   @relation("dispatch_notes_reference_document_type_idTodocument_types")
+  note_reasons                                                             note_reasons[]
+  purchase                                                                 purchase[]
+  sales                                                                    sales[]
+  transaction_logs                                                         transaction_logs[]
+}
+
+model documents_entry_guides_tabla {
+  id                    BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  entry_guide_id        BigInt       @default(0) @db.UnsignedBigInt
+  reference_document_id BigInt       @default(0) @db.UnsignedBigInt
+  reference_serie       String?      @default("") @db.VarChar(255)
+  reference_correlative String?      @default("") @db.VarChar(255)
+  created_at            DateTime?    @db.Timestamp(0)
+  updated_at            DateTime?    @db.Timestamp(0)
+  entry_guides          entry_guides @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, map: "document_entry_guide_tabla_entry_guide_id_foreign")
+
+  @@index([entry_guide_id], map: "document_entry_guide_tabla_entry_guide_id_foreign")
+  @@index([reference_document_id], map: "document_entry_guide_tabla_reference_document_id_foreign")
+}
+
+model drivers {
+  id                        BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  customer_document_type_id BigInt                  @db.UnsignedBigInt
+  doc_number                String                  @unique(map: "drivers_doc_number_unique") @db.VarChar(12)
+  name                      String                  @db.VarChar(20)
+  pat_surname               String                  @db.VarChar(20)
+  mat_surname               String                  @db.VarChar(20)
+  license                   String?                 @unique(map: "drivers_license_unique") @db.VarChar(13)
+  status                    Int                     @default(1)
+  created_at                DateTime?               @db.Timestamp(0)
+  updated_at                DateTime?               @db.Timestamp(0)
+  dispatch_notes            dispatch_notes[]
+  customer_document_types   customer_document_types @relation(fields: [customer_document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "drivers_customer_document_type_id_foreign")
+
+  @@index([customer_document_type_id], map: "drivers_customer_document_type_id_foreign")
+}
+
+model emission_reasons {
+  id                       BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  description              String                     @db.VarChar(100)
+  status                   Int                        @default(1)
+  st_transfer              Boolean                    @default(false)
+  stock                    Int?                       @default(0)
+  created_at               DateTime?                  @db.Timestamp(0)
+  updated_at               DateTime?                  @db.Timestamp(0)
+  dispatch_article_serials dispatch_article_serials[]
+}
+
+model entry_guide_article {
+  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  entry_guide_id  BigInt?       @db.UnsignedBigInt
+  article_id      BigInt        @db.UnsignedBigInt
+  description     String        @db.VarChar(255)
+  quantity        Float         @default(0)
+  subtotal        Float?        @default(0)
+  descuento       Float?        @default(0)
+  total_descuento Float?        @default(0)
+  total           Float?        @default(0)
+  saldo           Float?
+  created_at      DateTime?     @db.Timestamp(0)
+  updated_at      DateTime?     @db.Timestamp(0)
+  articles        articles      @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "entry_guide_article_article_id_foreign")
+  entry_guides    entry_guides? @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, map: "entry_guide_article_ibfk_1")
+
+  @@index([article_id], map: "entry_guide_article_article_id_foreign")
+  @@index([entry_guide_id], map: "entry_guide_id")
+}
+
+model entry_guides {
+  id                             BigInt                           @id @default(autoincrement()) @db.UnsignedBigInt
+  branch_id                      BigInt                           @default(0) @db.UnsignedBigInt
+  serie                          String                           @default("") @db.VarChar(20)
+  correlative                    String                           @default("") @db.VarChar(20)
+  customer_id                    BigInt                           @default(0) @db.UnsignedBigInt
+  date                           DateTime                         @default(dbgenerated("('0000-00-00')")) @db.Date
+  includ_igv                     Boolean?                         @default(false)
+  currency_id                    BigInt                           @default(0) @db.UnsignedBigInt
+  cia_id                         BigInt                           @default(0) @db.UnsignedBigInt
+  ingress_reason_id              BigInt                           @default(0) @db.UnsignedBigInt
+  observations                   String?                          @db.Text
+  reference_document_id          BigInt?                          @default(0)
+  reference_serie                String?                          @default("") @db.VarChar(20)
+  reference_correlative          String?                          @default("") @db.VarChar(20)
+  subtotal                       Float?                           @default(0)
+  total_descuento                Float?                           @default(0)
+  entry_igv                      Float?                           @default(0)
+  total                          Float?                           @default(0)
+  update_price                   Boolean?                         @default(false)
+  nc_document_id                 BigInt?                          @default(0)
+  nc_reference_serie             String?                          @default("") @db.VarChar(20)
+  nc_reference_correlative       String?                          @default("") @db.VarChar(20)
+  status                         Boolean                          @default(true)
+  payment_type_id                BigInt?
+  days                           Int?
+  date_ven                       DateTime?                        @db.DateTime(0)
+  created_at                     DateTime?                        @db.Timestamp(0)
+  updated_at                     DateTime?                        @db.Timestamp(0)
+  det_entry_guide_purchase_order det_entry_guide_purchase_order[]
+  documents_entry_guides_tabla   documents_entry_guides_tabla[]
+  entry_guide_article            entry_guide_article[]
+  branches                       branches                         @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "entry_guides_branch_id_foreign")
+  companies                      companies                        @relation(fields: [cia_id], references: [id], onUpdate: Restrict, map: "entry_guides_cia_id_foreign")
+  currency_types                 currency_types                   @relation(fields: [currency_id], references: [id], onUpdate: Restrict, map: "entry_guides_currency_id_foreign")
+  customers                      customers                        @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "entry_guides_customer_id_foreign")
+  ingress_reasons                ingress_reasons                  @relation(fields: [ingress_reason_id], references: [id], onUpdate: Restrict, map: "entry_guides_ingress_reason_id_foreign")
+  entry_item_serials             entry_item_serials[]
+  shopping_income_guide          shopping_income_guide[]
+  warranties                     warranties[]
+
+  @@unique([cia_id, branch_id, serie, correlative], map: "branch_id")
+  @@index([branch_id], map: "entry_guides_branch_id_foreign")
+  @@index([cia_id], map: "entry_guides_cia_id_foreign")
+  @@index([currency_id], map: "entry_guides_currency_id_foreign")
+  @@index([customer_id], map: "entry_guides_customer_id_foreign")
+  @@index([ingress_reason_id], map: "entry_guides_ingress_reason_id_foreign")
+}
+
+model entry_item_serials {
+  id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  entry_guide_id BigInt       @db.UnsignedBigInt
+  article_id     BigInt       @db.UnsignedBigInt
+  serial         String       @unique(map: "entry_item_serials_serial_unique") @db.VarChar(255)
+  branch_id      BigInt       @db.UnsignedBigInt
+  status         Int          @default(1)
+  created_at     DateTime?    @db.Timestamp(0)
+  updated_at     DateTime?    @db.Timestamp(0)
+  articles       articles     @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "entry_item_serials_article_id_foreign")
+  branches       branches     @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "entry_item_serials_branch_id_foreign")
+  entry_guides   entry_guides @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "entry_item_serials_entry_guide_id_foreign")
+
+  @@index([article_id], map: "entry_item_serials_article_id_foreign")
+  @@index([branch_id], map: "entry_item_serials_branch_id_foreign")
+  @@index([entry_guide_id], map: "entry_item_serials_entry_guide_id_foreign")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model exchange_rates {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  date          DateTime  @unique(map: "exchange_rates_date_unique") @db.Date
+  purchase_rate Decimal   @db.Decimal(6, 3)
+  sale_rate     Decimal   @db.Decimal(6, 3)
+  parallel_rate Decimal   @default(0.00) @db.Decimal(6, 2)
+  almacen       Boolean?  @default(false)
+  compras       Boolean?  @default(false)
+  ventas        Boolean?  @default(false)
+  cobranzas     Boolean?  @default(false)
+  pagos         Boolean?  @default(false)
+  created_at    DateTime? @db.Timestamp(0)
+  updated_at    DateTime? @db.Timestamp(0)
+}
+
+model failed_jobs {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid       String   @unique(map: "failed_jobs_uuid_unique") @db.VarChar(255)
+  connection String   @db.Text
+  queue      String   @db.Text
+  payload    String   @db.LongText
+  exception  String   @db.LongText
+  failed_at  DateTime @default(now()) @db.Timestamp(0)
+}
+
+model favorites {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  client_id  BigInt   @db.UnsignedBigInt
+  article_id BigInt   @db.UnsignedBigInt
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  clients    clients  @relation(fields: [client_id], references: [id], onDelete: Cascade)
+
+  @@unique([client_id, article_id])
+  @@index([article_id])
+}
+
+model reviews {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  client_id  BigInt   @db.UnsignedBigInt
+  article_id BigInt   @db.UnsignedBigInt
+  rating     Int      @db.TinyInt
+  comment    String?  @db.Text
+  status     Int      @default(1) @db.TinyInt
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @db.Timestamp(0)
+  articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade, map: "reviews_article_id_foreign")
+  clients    clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, map: "reviews_client_id_foreign")
+
+  @@index([client_id], map: "reviews_client_id_foreign")
+  @@index([article_id], map: "reviews_article_id_foreign")
+}
+
+model ingress_reasons {
+  id           BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  description  String         @db.VarChar(100)
+  status       Int            @default(1)
+  stock        Int?           @default(0)
+  created_at   DateTime?      @db.Timestamp(0)
+  updated_at   DateTime?      @db.Timestamp(0)
+  entry_guides entry_guides[]
+}
+
+model installments {
+  id                 BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  installment_number Int
+  sale_id            BigInt    @db.UnsignedBigInt
+  amount             Decimal   @db.Decimal(10, 2)
+  due_date           DateTime  @db.Date
+  created_at         DateTime? @db.Timestamp(0)
+  updated_at         DateTime? @db.Timestamp(0)
+  sales              sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "installments_sale_id_foreign")
+
+  @@index([sale_id], map: "installments_sale_id_foreign")
+}
+
+model job_batches {
+  id             String  @id @db.VarChar(255)
+  name           String  @db.VarChar(255)
+  total_jobs     Int
+  pending_jobs   Int
+  failed_jobs    Int
+  failed_job_ids String  @db.LongText
+  options        String? @db.MediumText
+  cancelled_at   Int?
+  created_at     Int
+  finished_at    Int?
+}
+
+model jobs {
+  id           BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  queue        String @db.VarChar(255)
+  payload      String @db.LongText
+  attempts     Int    @db.UnsignedTinyInt
+  reserved_at  Int?   @db.UnsignedInt
+  available_at Int    @db.UnsignedInt
+  created_at   Int    @db.UnsignedInt
+
+  @@index([queue], map: "jobs_queue_index")
+}
+
+model kardex {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id  BigInt    @db.UnsignedBigInt
+  branch_id   BigInt    @db.UnsignedBigInt
+  codigo      String?   @db.VarChar(255)
+  is_today    Boolean?
+  description String?   @db.VarChar(255)
+  before_fech DateTime? @db.Date
+  after_fech  DateTime? @db.Date
+  status      Boolean?
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+  branches    branches  @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "kardex_branch_id_foreign")
+  companies   companies @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "kardex_company_id_foreign")
+
+  @@index([branch_id], map: "kardex_branch_id_foreign")
+  @@index([company_id], map: "kardex_company_id_foreign")
+}
+
+model login_attempts {
+  id                    BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  username              String    @db.VarChar(255)
+  user_id               BigInt?   @db.UnsignedBigInt
+  successful            Boolean   @default(false)
+  ip_address            String    @db.VarChar(45)
+  user_agent            String?   @db.Text
+  failure_reason        String?   @db.VarChar(255)
+  failed_attempts_count Int?      @db.UnsignedInt
+  company_id            BigInt?   @db.UnsignedBigInt
+  role_id               BigInt?   @db.UnsignedBigInt
+  created_at            DateTime? @db.Timestamp(0)
+  updated_at            DateTime? @db.Timestamp(0)
+  users                 users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "login_attempts_user_id_foreign")
+
+  @@index([user_id], map: "login_attempts_user_id_foreign")
+  @@index([username], map: "login_attempts_username_index")
+}
+
+model measurement_units {
+  id           BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  name         String     @unique(map: "measurement_units_name_unique") @db.VarChar(30)
+  abbreviation String     @unique(map: "measurement_units_abbreviation_unique") @db.VarChar(10)
+  status       Int        @default(1)
+  created_at   DateTime?  @db.Timestamp(0)
+  updated_at   DateTime?  @db.Timestamp(0)
+  articles     articles[]
+}
+
+model menu_role {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  menu_id    BigInt    @db.UnsignedBigInt
+  role_id    BigInt    @db.UnsignedBigInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  menus      menus     @relation(fields: [menu_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "menu_role_menu_id_foreign")
+  roles      roles     @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "menu_role_role_id_foreign")
+
+  @@unique([menu_id, role_id], map: "menu_role_menu_id_role_id_unique")
+  @@index([role_id], map: "menu_role_role_id_foreign")
+}
+
+model menus {
+  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  name                  String                  @unique(map: "menus_name_unique") @db.VarChar(255)
+  label                 String                  @db.VarChar(255)
+  icon                  String?                 @db.VarChar(255)
+  route                 String?                 @db.VarChar(255)
+  permission            String?                 @db.VarChar(255)
+  parent_id             BigInt?                 @db.UnsignedBigInt
+  order                 Int                     @default(0)
+  status                Boolean                 @default(true)
+  type                  String                  @default("item") @db.VarChar(255)
+  metadata              String?                 @db.LongText
+  created_at            DateTime?               @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  menu_role             menu_role[]
+  menus                 menus?                  @relation("menusTomenus", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "menus_parent_id_foreign")
+  other_menus           menus[]                 @relation("menusTomenus")
+  user_menu_permissions user_menu_permissions[]
+
+  @@index([parent_id], map: "menus_parent_id_foreign")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  migration String @db.VarChar(255)
+  batch     Int
+}
+
+model model_has_permissions {
+  permission_id BigInt      @db.UnsignedBigInt
+  model_type    String      @db.VarChar(255)
+  model_id      BigInt      @db.UnsignedBigInt
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "model_has_permissions_permission_id_foreign")
+
+  @@id([permission_id, model_id, model_type])
+  @@index([model_id, model_type], map: "model_has_permissions_model_id_model_type_index")
+}
+
+model model_has_roles {
+  role_id    BigInt @db.UnsignedBigInt
+  model_type String @db.VarChar(255)
+  model_id   BigInt @db.UnsignedBigInt
+  roles      roles  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "model_has_roles_role_id_foreign")
+
+  @@id([role_id, model_id, model_type])
+  @@index([model_id, model_type], map: "model_has_roles_model_id_model_type_index")
+}
+
+model monthly_closures {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  year         Int
+  month        Int
+  st_purchases Boolean   @default(true)
+  st_cash      Boolean   @default(true)
+  st_sales     Boolean   @default(true)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+}
+
+model note_reasons {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  cod_sunat        String         @db.VarChar(2)
+  description      String         @db.VarChar(100)
+  document_type_id BigInt         @db.UnsignedBigInt
+  stock            Int
+  status           Int            @default(1)
+  created_at       DateTime?      @db.Timestamp(0)
+  updated_at       DateTime?      @db.Timestamp(0)
+  document_types   document_types @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "note_reasons_document_type_id_foreign")
+  sales            sales[]
+
+  @@index([document_type_id], map: "note_reasons_document_type_id_foreign")
+}
+
+model password_reset_tokens {
+  email      String    @id @db.VarChar(255)
+  token      String    @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+}
+
+model payment_concepts {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  description  String    @db.VarChar(150)
+  account      String?   @default("") @db.VarChar(20)
+  is_provision Int?      @default(0)
+  company_id   BigInt?
+  status       Boolean   @default(true)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+}
+
+model payment_method_sunat {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  cod        Int
+  des        String    @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model payment_methods {
+  id           BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  description  String        @db.VarChar(40)
+  status       Int           @default(1)
+  st_visible   Boolean       @default(true)
+  abbreviation String?       @default("") @db.VarChar(5)
+  created_at   DateTime?     @db.Timestamp(0)
+  updated_at   DateTime?     @db.Timestamp(0)
+  advances     advances[]
+  collections  collections[]
+}
+
+model payment_types {
+  id              BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  name            String            @db.VarChar(30)
+  status          Int               @default(1)
+  created_at      DateTime?         @db.Timestamp(0)
+  updated_at      DateTime?         @db.Timestamp(0)
+  purchase        purchase[]
+  purchase_orders purchase_orders[]
+  sales           sales[]
+}
+
+model percentage_igvs {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  date       DateTime  @db.Date
+  percentage Int
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model permissions {
+  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  name                  String                  @db.VarChar(255)
+  guard_name            String                  @db.VarChar(255)
+  created_at            DateTime?               @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  model_has_permissions model_has_permissions[]
+  role_has_permissions  role_has_permissions[]
+
+  @@unique([name, guard_name], map: "permissions_name_guard_name_unique")
+}
+
+model personal_access_tokens {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tokenable_type String    @db.VarChar(255)
+  tokenable_id   BigInt    @db.UnsignedBigInt
+  name           String    @db.Text
+  token          String    @unique(map: "personal_access_tokens_token_unique") @db.VarChar(64)
+  abilities      String?   @db.Text
+  last_used_at   DateTime? @db.Timestamp(0)
+  expires_at     DateTime? @db.Timestamp(0)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+
+  @@index([expires_at], map: "personal_access_tokens_expires_at_index")
+  @@index([tokenable_type, tokenable_id], map: "personal_access_tokens_tokenable_type_tokenable_id_index")
+}
+
+model petty_cash_motive {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id   BigInt    @db.UnsignedBigInt
+  description  String    @db.VarChar(255)
+  receipt_type Int?
+  user_id      Int?
+  status       Boolean   @default(true)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+  companies    companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "petty_cash_motive_company_id_foreign")
+
+  @@index([company_id], map: "petty_cash_motive_company_id_foreign")
+}
+
+model petty_cash_receipt {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id    BigInt    @db.UnsignedBigInt
+  document_type Int
+  series        String    @db.VarChar(255)
+  correlative   String    @db.VarChar(255)
+  date          DateTime  @db.Date
+  delivered_to  String?
+  reason_code   BigInt    @db.UnsignedBigInt
+  currency_type Int?
+  amount        Decimal   @default(0.00) @db.Decimal(12, 2)
+  observation   String?   @db.Text
+  status        Int       @default(1)
+  branch_id     BigInt    @db.UnsignedBigInt
+  created_at    DateTime? @db.Timestamp(0)
+  updated_at    DateTime? @db.Timestamp(0)
+  branches      branches  @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "petty_cash_receipt_branch_id_foreign")
+  companies     companies @relation(fields: [company_id], references: [id], map: "petty_cash_receipt_company_id_foreign")
+
+  @@unique([company_id, document_type, series, correlative], map: "company_id")
+  @@index([branch_id], map: "petty_cash_receipt_branch_id_foreign")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model provinces {
+  coddep String? @db.Char(8)
+  codpro String? @db.Char(8)
+  nompro String? @db.VarChar(140)
+
+  @@unique([coddep, codpro], map: "coddep_2")
+  @@index([coddep, codpro], map: "coddep")
+  @@ignore
+}
+
+model purchase {
+  id                       BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id               BigInt                   @db.UnsignedBigInt
+  branch_id                BigInt                   @db.UnsignedBigInt
+  supplier_id              BigInt?                  @db.UnsignedBigInt
+  serie                    String                   @db.VarChar(255)
+  correlative              String                   @db.VarChar(255)
+  exchange_type            Float
+  payment_type_id          BigInt                   @db.UnsignedBigInt
+  currency                 Float
+  date                     DateTime                 @db.Date
+  date_ven                 DateTime                 @db.Date
+  days                     Int
+  observation              String                   @db.VarChar(255)
+  detraccion               String                   @db.VarChar(255)
+  fech_detraccion          DateTime?                @db.Date
+  amount_detraccion        Float
+  is_detracion             Boolean
+  subtotal                 Float
+  total_desc               Float
+  inafecto                 Float
+  igv                      Float
+  total                    Float
+  saldo                    Float
+  is_igv                   Boolean                  @default(false)
+  document_type_id         BigInt                   @db.UnsignedBigInt
+  reference_serie          String                   @db.VarChar(10)
+  reference_correlative    String                   @db.VarChar(15)
+  nc_document_id           BigInt?                  @default(0)
+  nc_reference_serie       String?                  @default("") @db.VarChar(20)
+  nc_reference_correlative String?                  @default("") @db.VarChar(20)
+  status                   Int?                     @default(1)
+  created_at               DateTime?                @db.Timestamp(0)
+  updated_at               DateTime?                @db.Timestamp(0)
+  detail_purchase_guides   detail_purchase_guides[]
+  branches                 branches                 @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "purchase_branch_id_foreign")
+  companies                companies                @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "purchase_company_id_foreign")
+  document_types           document_types           @relation(fields: [document_type_id], references: [id], onUpdate: Restrict, map: "purchase_document_type_id")
+  payment_types            payment_types            @relation(fields: [payment_type_id], references: [id], onUpdate: Restrict, map: "purchase_payment_type_id_foreign")
+  sc_voucherdet            sc_voucherdet[]
+  shopping_income_guide    shopping_income_guide[]
+
+  @@unique([company_id, branch_id, serie, correlative], map: "company_id")
+  @@index([branch_id], map: "purchase_branch_id_foreign")
+  @@index([document_type_id], map: "purchase_document_type_id")
+  @@index([payment_type_id], map: "purchase_payment_type_id_foreign")
+}
+
+model purchase_order_article {
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  purchase_order_id BigInt          @db.UnsignedBigInt
+  article_id        BigInt          @db.UnsignedBigInt
+  description       String          @db.VarChar(150)
+  weight            Decimal         @db.Decimal(8, 2)
+  quantity          Int
+  purchase_price    Decimal         @db.Decimal(8, 2)
+  subtotal          Decimal         @db.Decimal(8, 2)
+  saldo             Int
+  created_at        DateTime?       @db.Timestamp(0)
+  updated_at        DateTime?       @db.Timestamp(0)
+  articles          articles        @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_order_article_article_id_foreign")
+  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_order_article_purchase_order_id_foreign")
+
+  @@index([article_id], map: "purchase_order_article_article_id_foreign")
+  @@index([purchase_order_id], map: "purchase_order_article_purchase_order_id_foreign")
+}
+
+model purchase_orders {
+  id                             BigInt                           @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id                     BigInt                           @db.UnsignedBigInt
+  branch_id                      BigInt                           @db.UnsignedBigInt
+  serie                          String                           @db.VarChar(5)
+  correlative                    String                           @db.VarChar(8)
+  date                           DateTime                         @db.Date
+  delivery_date                  DateTime?                        @db.Date
+  due_date                       DateTime?                        @db.Date
+  days                           Int?
+  contact_name                   String?                          @db.VarChar(255)
+  contact_phone                  String?                          @db.VarChar(255)
+  currency_type_id               BigInt                           @db.UnsignedBigInt
+  parallel_rate                  Decimal                          @db.Decimal(10, 2)
+  payment_type_id                BigInt                           @db.UnsignedBigInt
+  supplier_id                    BigInt                           @db.UnsignedBigInt
+  order_number_supplier          String?                          @db.VarChar(255)
+  observations                   String?                          @db.VarChar(255)
+  status                         Int                              @default(0)
+  percentage_igv                 Int
+  is_igv_included                Boolean
+  subtotal                       Decimal                          @db.Decimal(10, 2)
+  igv                            Decimal                          @db.Decimal(10, 2)
+  total                          Decimal                          @db.Decimal(10, 2)
+  created_at                     DateTime?                        @db.Timestamp(0)
+  updated_at                     DateTime?                        @db.Timestamp(0)
+  det_entry_guide_purchase_order det_entry_guide_purchase_order[]
+  purchase_order_article         purchase_order_article[]
+  branches                       branches                         @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_branch_id_foreign")
+  companies                      companies                        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_company_id_foreign")
+  currency_types                 currency_types                   @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_currency_type_id_foreign")
+  payment_types                  payment_types                    @relation(fields: [payment_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_payment_type_id_foreign")
+  customers                      customers                        @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_supplier_id_foreign")
+
+  @@index([branch_id], map: "purchase_orders_branch_id_foreign")
+  @@index([company_id], map: "purchase_orders_company_id_foreign")
+  @@index([currency_type_id], map: "purchase_orders_currency_type_id_foreign")
+  @@index([payment_type_id], map: "purchase_orders_payment_type_id_foreign")
+  @@index([supplier_id], map: "purchase_orders_supplier_id_foreign")
+}
+
+model record_types {
+  id           BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  name         String      @db.VarChar(30)
+  abbreviation String      @db.VarChar(10)
+  status       Int         @default(1)
+  created_at   DateTime?   @db.Timestamp(0)
+  updated_at   DateTime?   @db.Timestamp(0)
+  customers    customers[]
+}
+
+model reference_codes {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  ref_code   String    @db.VarChar(20)
+  article_id BigInt    @db.UnsignedBigInt
+  date_at    String    @db.VarChar(255)
+  status     Int       @default(1) @db.TinyInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, map: "reference_codes_article_id_foreign")
+
+  @@index([article_id], map: "reference_codes_article_id_foreign")
+}
+
+model role_has_permissions {
+  permission_id BigInt      @db.UnsignedBigInt
+  role_id       BigInt      @db.UnsignedBigInt
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "role_has_permissions_permission_id_foreign")
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "role_has_permissions_role_id_foreign")
+
+  @@id([permission_id, role_id])
+  @@index([role_id], map: "role_has_permissions_role_id_foreign")
+}
+
+model roles {
+  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  name                  String                  @db.VarChar(255)
+  guard_name            String                  @db.VarChar(255)
+  created_at            DateTime?               @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  menu_role             menu_role[]
+  model_has_roles       model_has_roles[]
+  role_has_permissions  role_has_permissions[]
+  transaction_logs      transaction_logs[]
+  user_menu_permissions user_menu_permissions[]
+
+  @@unique([name, guard_name], map: "roles_name_guard_name_unique")
+}
+
+model sale_article {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  sale_id        BigInt    @db.UnsignedBigInt
+  article_id     BigInt    @db.UnsignedBigInt
+  description    String    @db.VarChar(255)
+  quantity       Int
+  unit_price     Decimal   @db.Decimal(10, 2)
+  public_price   Decimal   @db.Decimal(10, 2)
+  subtotal       Decimal   @db.Decimal(10, 2)
+  purchase_price Decimal   @db.Decimal(10, 2)
+  costo_neto     Decimal   @db.Decimal(10, 2)
+  warranty       String?   @db.VarChar(150)
+  sticbper       Int?      @default(0)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+  articles       articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_article_article_id_foreign")
+  sales          sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_article_sale_id_foreign")
+
+  @@index([article_id], map: "sale_article_article_id_foreign")
+  @@index([sale_id], map: "sale_article_sale_id_foreign")
+}
+
+model sale_item_serial {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  sale_id    BigInt    @db.UnsignedBigInt
+  article_id BigInt    @db.UnsignedBigInt
+  serial     String    @db.VarChar(255)
+  status     Boolean?  @default(true)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_item_serial_article_id_foreign")
+  sales      sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_item_serial_sale_id_foreign")
+
+  @@index([article_id], map: "sale_item_serial_article_id_foreign")
+  @@index([sale_id], map: "sale_item_serial_sale_id_foreign")
+}
+
+model sales {
+  id                                    BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id                            BigInt             @db.UnsignedBigInt
+  branch_id                             BigInt             @db.UnsignedBigInt
+  document_type_id                      BigInt             @db.UnsignedBigInt
+  serie                                 String             @db.VarChar(10)
+  document_number                       String             @db.VarChar(10)
+  parallel_rate                         Decimal            @db.Decimal(8, 2)
+  customer_id                           BigInt             @db.UnsignedBigInt
+  date                                  DateTime           @db.Date
+  due_date                              DateTime           @db.Date
+  days                                  Int
+  user_id                               BigInt             @db.UnsignedBigInt
+  user_sale_id                          BigInt?            @db.UnsignedBigInt
+  payment_type_id                       BigInt             @db.UnsignedBigInt
+  observations                          String?            @db.Text
+  currency_type_id                      BigInt             @db.UnsignedBigInt
+  subtotal                              Decimal            @db.Decimal(10, 2)
+  inafecto                              Decimal?           @db.Decimal(10, 2)
+  igv                                   Decimal            @db.Decimal(10, 2)
+  total                                 Decimal            @db.Decimal(10, 2)
+  saldo                                 Decimal?           @db.Decimal(10, 2)
+  amount_amortized                      Decimal?           @db.Decimal(10, 2)
+  status                                Int                @default(1)
+  payment_status                        Int                @default(0)
+  is_locked                             Boolean            @default(false)
+  serie_prof                            String?            @db.VarChar(255)
+  correlative_prof                      String?            @db.VarChar(255)
+  purchase_order                        String?            @db.VarChar(255)
+  reference_document_type_id            BigInt?            @default(0)
+  reference_serie                       String?            @db.VarChar(255)
+  reference_correlative                 String?            @db.VarChar(255)
+  note_reason_id                        BigInt?            @db.UnsignedBigInt
+  user_authorized_id                    BigInt?            @db.UnsignedBigInt
+  credit_amount                         Decimal?           @db.Decimal(10, 2)
+  coddetrac                             Int?               @default(0)
+  pordetrac                             Decimal?           @db.Decimal(8, 2)
+  impdetracs                            Decimal?           @db.Decimal(8, 2)
+  impdetracd                            Decimal?           @db.Decimal(8, 2)
+  stretencion                           Boolean?           @default(false)
+  porretencion                          Decimal?           @db.Decimal(8, 2)
+  impretens                             Decimal?           @db.Decimal(8, 2)
+  impretend                             Decimal?           @db.Decimal(8, 2)
+  total_costo_neto                      Decimal?           @db.Decimal(10, 2)
+  icbper                                Decimal?           @db.Decimal(10, 2)
+  estado_sunat                          String?            @default("") @db.VarChar(20)
+  fecha_aceptacion                      DateTime?          @db.DateTime(0)
+  respuesta_sunat                       String?            @db.Text
+  fecha_baja_sunat                      DateTime?          @db.Date
+  hora_baja_sunat                       DateTime?          @db.Time(0)
+  consignation_id                       BigInt?
+  igv_percentage                        Decimal?           @default(0.00) @db.Decimal(4, 2)
+  created_at                            DateTime?          @db.Timestamp(0)
+  updated_at                            DateTime?          @db.Timestamp(0)
+  collections                           collections[]
+  installments                          installments[]
+  sale_article                          sale_article[]
+  sale_item_serial                      sale_item_serial[]
+  branches                              branches           @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_branch_id_foreign")
+  companies                             companies          @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_company_id_foreign")
+  currency_types                        currency_types     @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_currency_type_id_foreign")
+  customers                             customers          @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_customer_id_foreign")
+  document_types                        document_types     @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_document_type_id_foreign")
+  note_reasons                          note_reasons?      @relation(fields: [note_reason_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_note_reason_id_foreign")
+  payment_types                         payment_types      @relation(fields: [payment_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_payment_type_id_foreign")
+  users_sales_user_authorized_idTousers users?             @relation("sales_user_authorized_idTousers", fields: [user_authorized_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_user_authorized_id_foreign")
+  users_sales_user_idTousers            users              @relation("sales_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_user_id_foreign")
+  users_sales_user_sale_idTousers       users?             @relation("sales_user_sale_idTousers", fields: [user_sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_user_sale_id_foreign")
+  warranties                            warranties[]
+
+  @@unique([company_id, branch_id, document_type_id, serie, document_number], map: "company_id")
+  @@unique([serie, document_number], map: "serie,document_number")
+  @@index([reference_correlative], map: "reference_correlative")
+  @@index([reference_document_type_id, reference_serie, reference_correlative], map: "reference_document_type_id")
+  @@index([reference_document_type_id], map: "reference_document_type_id_2")
+  @@index([reference_serie], map: "reference_serie")
+  @@index([branch_id], map: "sales_branch_id_foreign")
+  @@index([currency_type_id], map: "sales_currency_type_id_foreign")
+  @@index([customer_id], map: "sales_customer_id_foreign")
+  @@index([document_type_id], map: "sales_document_type_id_foreign")
+  @@index([note_reason_id], map: "sales_note_reason_id_foreign")
+  @@index([payment_type_id], map: "sales_payment_type_id_foreign")
+  @@index([user_authorized_id], map: "sales_user_authorized_id_foreign")
+  @@index([user_id], map: "sales_user_id_foreign")
+  @@index([user_sale_id], map: "sales_user_sale_id_foreign")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_balance {
+  COD    Int     @id @default(0)
+  DESCRI String? @db.VarChar(50)
+  GRUPO  Int?
+  DOS    String? @db.VarChar(80)
+  TRES   String? @db.VarChar(80)
+  SEIS   String? @db.VarChar(80)
+  NOTRES String? @db.VarChar(80)
+  NOSEIS String? @db.VarChar(80)
+  DESGRU String? @db.VarChar(80)
+}
+
+model sc_centronw {
+  CIA    Int     @default(0)
+  CUENTA String  @db.VarChar(8)
+  CODCEN Int     @default(0) @db.SmallInt
+  CTADEB String? @db.VarChar(8)
+  CTAHAB String? @db.VarChar(8)
+  PORCEN Float?  @default(0.00)
+
+  @@id([CIA, CUENTA, CODCEN])
+  @@index([CIA, CODCEN], map: "IDX_jccentro_2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_cierre_mes_contable {
+  cia     Int @default(0)
+  ano     Int @default(0)
+  mes     Int @default(0)
+  stalma  Int @default(0)
+  usralma Int @default(0)
+  stven   Int @default(0)
+  usrven  Int @default(0)
+  stcaja  Int @default(0)
+  usrcaja Int @default(0)
+  stconta Int @default(0)
+  usrcon  Int @default(0)
+
+  @@id([cia, ano, mes])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_compras {
+  CIA           Int             @default(0)
+  ANOPR         Int             @default(0)
+  MESPR         Int             @default(0)
+  COMP          Int             @default(0)
+  CODGRU        String          @db.Char(1)
+  CORREL        Int             @default(0)
+  GUIING        String?         @db.VarChar(12)
+  FORPAG        Int             @default(0) @db.SmallInt
+  TIPCOM        Int             @default(0) @db.SmallInt
+  CODCAJA       Int             @default(0) @db.SmallInt
+  ANOCAJA       Int             @default(0) @db.SmallInt
+  NROCAJA       Int             @default(0) @db.SmallInt
+  CODIGO        Int             @default(0)
+  TIPDOC        Int             @default(0)
+  NUMDOC        String          @db.VarChar(12)
+  FECHA         DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
+  DIAS          Int             @default(0) @db.SmallInt
+  FECVEN        DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
+  FECCAN        DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
+  GLOSA         String          @db.VarChar(60)
+  TIPMON        Int             @default(0) @db.SmallInt
+  TIPCAM        Float           @default(0.0000) @db.Float
+  PORIGV        Int             @default(0) @db.SmallInt
+  AFECTO        Float           @default(0.00)
+  INAFECTO      Float           @default(0.00)
+  IGV           Float           @default(0.00)
+  SALDO         Float           @default(0.00)
+  STDET         Int             @default(0)
+  USRALT        Int             @default(0) @db.SmallInt
+  FECALT        DateTime?       @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRMOD        Int             @default(0) @db.SmallInt
+  FECMOD        DateTime?       @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  sc_tabcom     sc_tabcom       @relation(fields: [CIA, TIPCOM], references: [CIA, COD], onUpdate: Restrict, map: "sc_compras_ibfk_1")
+  sc_comprasabo sc_comprasabo?
+  sc_comprasadi sc_comprasadi?
+  sc_comprasdet sc_comprasdet[]
+
+  @@id([CIA, ANOPR, MESPR, COMP])
+  @@index([CIA, CODCAJA], map: "CIA")
+  @@index([CIA, TIPCOM], map: "FK_sc_compras")
+  @@index([CIA, CODIGO], map: "FK_sc_compras3")
+  @@index([TIPDOC], map: "sc_compras_fk1")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_comprasabo {
+  CIA        Int        @default(0)
+  ANOPR      Int        @default(0)
+  MESPR      Int        @default(0)
+  COMP       Int        @default(0)
+  ABONO      Float      @default(0.00)
+  sc_compras sc_compras @relation(fields: [CIA, ANOPR, MESPR, COMP], references: [CIA, ANOPR, MESPR, COMP], onDelete: Cascade, map: "sc_comprasabo_ibfk_1")
+
+  @@id([CIA, ANOPR, MESPR, COMP])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_comprasadi {
+  CIA        Int        @default(0)
+  ANOPR      Int        @default(0)
+  MESPR      Int        @default(0)
+  COMP       Int        @default(0)
+  DOCREF     Int?       @default(0)
+  NUMREF     String?    @db.VarChar(12)
+  FECREF     DateTime?  @db.Date
+  NROSPOT    String     @db.VarChar(10)
+  FECSPOT    DateTime?  @default(dbgenerated("('0000-00-00')")) @db.Date
+  IMPSPOT    Decimal?   @default(0.00) @db.Decimal(12, 2)
+  sc_compras sc_compras @relation(fields: [CIA, ANOPR, MESPR, COMP], references: [CIA, ANOPR, MESPR, COMP], onDelete: Cascade, map: "sc_comprasadi_ibfk_1")
+
+  @@id([CIA, ANOPR, MESPR, COMP])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_comprasdet {
+  CIA        Int        @default(0)
+  ANOPR      Int        @default(0)
+  MESPR      Int        @default(0)
+  COMP       Int        @default(0)
+  CORREL     Int        @default(0)
+  CUENTA     String     @db.VarChar(8)
+  CC         Int        @default(0) @db.SmallInt
+  AFECTO     Float      @default(0.00)
+  INAFECTO   Float      @default(0.00)
+  IGV        Float      @default(0.00)
+  TOTAL      Float      @default(0.00)
+  sc_compras sc_compras @relation(fields: [CIA, ANOPR, MESPR, COMP], references: [CIA, ANOPR, MESPR, COMP], onDelete: Cascade, map: "sc_comprasdet_ibfk_1")
+
+  @@id([CIA, ANOPR, MESPR, COMP, CORREL])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_glosas {
+  CIA    Int       @default(0)
+  ANOPR  Int       @default(0) @db.SmallInt
+  MESPR  Int       @default(0) @db.SmallInt
+  CODLIB Int       @default(0) @db.SmallInt
+  COMP   Int       @default(0)
+  FECHA  DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  TIPCAM Float?    @default(0.0000) @db.Float
+  GLOSA  String?   @db.VarChar(120)
+
+  @@id([CIA, ANOPR, MESPR, CODLIB, COMP])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_glosasnw {
+  CIA         Int           @default(0)
+  ANOPR       Int           @default(0) @db.SmallInt
+  MESPR       Int           @default(0) @db.SmallInt
+  CODLIB      Int           @default(0) @db.SmallInt
+  COMP        Int           @default(0)
+  FECHA       DateTime?     @default(dbgenerated("('0000-00-00')")) @db.Date
+  TIPCAM      Float?        @default(0.0000) @db.Float
+  GLOSA       String?       @db.VarChar(120)
+  sc_moviminw sc_moviminw[]
+
+  @@id([CIA, ANOPR, MESPR, CODLIB, COMP])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_moviminw {
+  CIA                Int                  @default(0)
+  ANOPR              Int                  @default(0) @db.SmallInt
+  MESPR              Int                  @default(0) @db.SmallInt
+  CODLIB             Int                  @default(0) @db.SmallInt
+  COMP               Int                  @default(0)
+  CORREL             Int                  @default(0) @db.SmallInt
+  ORDEN              Int                  @default(0) @db.SmallInt
+  FECHA              DateTime?            @default(dbgenerated("('0000-00-00')")) @db.Date
+  CUENTA             String?              @db.VarChar(8)
+  CODCEN             Int                  @default(0) @db.SmallInt
+  CODIGO             Int?                 @default(0)
+  TIPDOC             Int?                 @default(0)
+  NUMDOC             String?              @db.VarChar(12)
+  DOCREF             Int                  @default(0)
+  NUMREF             String?              @db.VarChar(12)
+  FECVEN             DateTime?            @default(dbgenerated("('0000-00-00')")) @db.Date
+  GLOSA              String?              @db.VarChar(200)
+  DH                 String?              @db.Char(1)
+  TIPMON             Int                  @default(0)
+  TIPCAM             Float                @default(0.0000) @db.Float
+  IMPSOL             Float?               @default(0.00)
+  IMPDOL             Float?               @default(0.00)
+  FLGAUT             Boolean              @default(false)
+  USRALT             Int                  @default(0) @db.SmallInt
+  FECALT             DateTime?            @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRMOD             Int                  @default(0) @db.SmallInt
+  FECMOD             DateTime?            @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  sc_glosasnw        sc_glosasnw          @relation(fields: [CIA, ANOPR, MESPR, CODLIB, COMP], references: [CIA, ANOPR, MESPR, CODLIB, COMP], onDelete: Cascade, map: "FK_sc_moviminw")
+  sc_plannw          sc_plannw?           @relation(fields: [CIA, CUENTA], references: [CIA, CUENTA], onUpdate: Restrict, map: "sc_moviminw_ibfk_1")
+  sc_moviminw_correl sc_moviminw_correl[]
+
+  @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN])
+  @@index([CODLIB], map: "CODLIB")
+  @@index([CIA, CUENTA], map: "IDX_jcmovimi_2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_moviminw_correl {
+  CIA         Int         @default(0)
+  ANOPR       Int         @default(0) @db.SmallInt
+  MESPR       Int         @default(0) @db.SmallInt
+  CODLIB      Int         @default(0) @db.SmallInt
+  COMP        Int         @default(0)
+  CORREL      Int         @default(0) @db.SmallInt
+  ORDEN       Int         @default(0) @db.SmallInt
+  COR_DIARIO  Int         @default(0)
+  sc_moviminw sc_moviminw @relation(fields: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN], references: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN], onDelete: Cascade, map: "FK_sc_moviminw_correl")
+
+  @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN, COR_DIARIO])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_plannw {
+  CIA         Int           @default(0)
+  CUENTA      String        @db.VarChar(8)
+  DESCRI      String?       @db.VarChar(40)
+  DESABR      String?       @db.VarChar(20)
+  RECMOV      String?       @db.Char(1)
+  CLASE       String?       @db.Char(1)
+  codvar      String?       @db.Char(1)
+  CTACTE      String?       @db.Char(1)
+  REQPRO      String?       @db.Char(1)
+  DIFITE      String?       @db.Char(1)
+  DIFMEN      String?       @db.Char(1)
+  st          Int?          @default(0) @db.SmallInt
+  sc_moviminw sc_moviminw[]
+
+  @@id([CIA, CUENTA])
+}
+
+model sc_tabcar {
+  COD Int     @id @default(0)
+  DES String? @db.VarChar(25)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_tabcen {
+  CIA    Int     @default(0)
+  CODCEN Int     @default(0) @db.SmallInt
+  DESCRI String? @db.VarChar(25)
+
+  @@id([CIA, CODCEN])
+}
+
+model sc_tabcla {
+  CODGRU Int    @default(0)
+  OPCION String @default("") @db.VarChar(10)
+  VALOR  Int    @default(0)
+
+  @@id([CODGRU, OPCION])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_tabcom {
+  CIA        Int          @default(0)
+  COD        Int          @default(0) @db.SmallInt
+  DES        String?      @db.VarChar(30)
+  CTASOL     String?      @db.VarChar(8)
+  CTADOL     String?      @db.VarChar(8)
+  CTASOLNW   String?      @db.VarChar(8)
+  CTADOLNW   String?      @db.VarChar(8)
+  sc_compras sc_compras[]
+
+  @@id([CIA, COD])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_tabgru {
+  COD String  @id @db.Char(1)
+  DES String? @db.VarChar(30)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_tablib {
+  CODLIB  Int     @id @default(0) @db.SmallInt
+  DESCRI  String? @db.VarChar(50)
+  DESABR  String? @db.VarChar(20)
+  codsun  Int     @default(0)
+  stforma Int     @default(0)
+  DESRES  String? @db.VarChar(50)
+}
+
+model sc_tabscr {
+  OPCION String  @id @default("") @db.VarChar(10)
+  DESCRI String? @db.VarChar(50)
+}
+
+model sc_tabusr {
+  COD     Int       @id @default(0)
+  USUARIO String?   @db.VarChar(10)
+  NOMUSR  String?   @db.VarChar(25)
+  APEUSR  String?   @db.VarChar(30)
+  CODCAR  Int?      @default(0)
+  FECALT  DateTime? @db.DateTime(0)
+  FECBAJ  DateTime? @db.DateTime(0)
+  PWD     Int?      @default(0)
+  ST      Int?      @default(0)
+  CIAACT  Int?      @default(0)
+  SUCACT  Int?      @default(0)
+  CODGRU  Int?      @default(0)
+  RUTA    String    @default("") @db.VarChar(50)
+
+  @@index([CODGRU], map: "CODGRU")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_tabvar {
+  cia    Int
+  cod    Int
+  descri String? @db.VarChar(40)
+
+  @@id([cia, cod])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_tabven {
+  CIA      Int     @default(0)
+  COD      Int     @default(0) @db.SmallInt
+  DES      String? @db.VarChar(30)
+  CTASOL   String? @db.VarChar(8)
+  CTADOL   String? @db.VarChar(8)
+  CTASOLNW String? @db.VarChar(6)
+  CTADOLNW String? @db.VarChar(6)
+
+  @@id([CIA, COD])
+}
+
+model sc_usrgru {
+  COD Int     @id @default(0)
+  DES String? @db.VarChar(30)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_ventas {
+  CIA          Int            @default(0)
+  TIPDOC       Int            @default(0) @db.SmallInt
+  NUMDOC       String         @db.VarChar(12)
+  CODIGO       Int            @default(0)
+  FECHA        DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
+  FECVEN       DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
+  GLOSA        String?        @db.VarChar(60)
+  TIPMON       Int            @default(0) @db.SmallInt
+  TIPCAM       Float          @default(0.0000) @db.Float
+  FORPAG       Int            @default(0) @db.SmallInt
+  BRUTO        Float          @default(0.00)
+  INAFE        Float?         @default(0.00)
+  DESCTO       Float          @default(0.00)
+  IGV          Float          @default(0.00)
+  PORIGV       Float          @default(0.00)
+  TIPVEN       Int            @default(0) @db.SmallInt
+  COMP         Int?           @default(0)
+  ST           Int            @default(0) @db.SmallInt
+  USRALT       Int            @default(0) @db.SmallInt
+  FECALT       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRMOD       Int            @default(0) @db.SmallInt
+  FECMOD       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRANU       Int            @default(0) @db.SmallInt
+  FECANU       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  sc_ventasdet sc_ventasdet[]
+  sc_ventasexp sc_ventasexp?
+
+  @@id([CIA, TIPDOC, NUMDOC])
+  @@index([CIA, CODIGO], map: "CIA")
+  @@index([CIA, TIPVEN], map: "FK_sc_ventas")
+  @@index([NUMDOC], map: "NUMDOC")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_ventasdet {
+  CIA       Int       @default(0)
+  TIPDOC    Int       @default(0) @db.SmallInt
+  NUMDOC    String    @db.VarChar(12)
+  CORREL    Int       @default(0) @db.SmallInt
+  CUENTA    String?   @db.VarChar(8)
+  AFECTO    Float     @default(0.00)
+  INAFECTO  Float     @default(0.00)
+  IGV       Float     @default(0.00)
+  descto    Float?    @default(0.00)
+  sc_ventas sc_ventas @relation(fields: [CIA, TIPDOC, NUMDOC], references: [CIA, TIPDOC, NUMDOC], onDelete: Cascade, map: "sc_ventasdet_ibfk_3")
+
+  @@id([CIA, TIPDOC, NUMDOC, CORREL])
+  @@index([CIA, CUENTA], map: "CIA")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_ventasexp {
+  CIA       Int       @default(0)
+  TIPDOC    Int       @default(0) @db.SmallInt
+  NUMDOC    String    @db.VarChar(12)
+  FLETE     Float     @default(0.00) @db.Float
+  SEGURO    Float     @default(0.00) @db.Float
+  DOCREF    Int       @default(0)
+  NUMREF    String?   @db.VarChar(12)
+  FECREF    DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
+  sc_ventas sc_ventas @relation(fields: [CIA, TIPDOC, NUMDOC], references: [CIA, TIPDOC, NUMDOC], onDelete: Cascade, map: "sc_ventasexp_ibfk_1")
+
+  @@id([CIA, TIPDOC, NUMDOC])
+}
+
+model sc_voucher {
+  id            BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  cia           Int?
+  anopr         String?         @db.VarChar(20)
+  correlativo   Int?
+  fecha         DateTime?       @db.Date
+  codban        Int?
+  codigo        Int?
+  correl        Int?            @default(0)
+  nroope        String?         @db.VarChar(15)
+  glosa         String?         @db.VarChar(120)
+  orden         String?         @db.VarChar(60)
+  tipmon        Int?
+  tipcam        Decimal?        @default(0.0000) @db.Decimal(6, 4)
+  total         Decimal?        @default(0.00) @db.Decimal(10, 2)
+  medpag        Int?
+  tipopago      Int?
+  fecdif        DateTime?       @db.Date
+  porret        Decimal?        @default(0.000) @db.Decimal(12, 3)
+  status        Int?            @default(1)
+  usradi        Int?
+  fecadi        DateTime?       @db.DateTime(0)
+  usrmod        Int?
+  fecmod        DateTime?       @db.DateTime(0)
+  path_image    String?         @db.VarChar(255)
+  created_at    DateTime?       @db.Timestamp(0)
+  updated_at    DateTime?       @db.Timestamp(0)
+  sc_voucherdet sc_voucherdet[]
+}
+
+model sc_voucher_nd {
+  CIA              Int                @default(0)
+  ANOPR            Int                @default(0) @db.SmallInt
+  COMP             Int                @default(0)
+  FECHA            DateTime?          @default(dbgenerated("('0000-00-00')")) @db.Date
+  CODBAN           Int                @default(0) @db.SmallInt
+  CORREL           Int                @default(0) @db.SmallInt
+  GLOSA            String?            @db.VarChar(120)
+  TIPMON           Int                @default(0) @db.SmallInt
+  TIPCAM           Float              @default(0.0000)
+  TOTAL            Float              @default(0.00)
+  ST               Int?               @default(0) @db.SmallInt
+  MARCA            Int                @default(0) @db.SmallInt
+  USRADI           Int                @default(0) @db.SmallInt
+  FECADI           DateTime?          @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRMOD           Int                @default(0) @db.SmallInt
+  FECMOD           DateTime?          @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  USRANU           Int?               @default(0) @db.SmallInt
+  FECANU           DateTime?          @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  sc_voucherdet_nd sc_voucherdet_nd[]
+
+  @@id([CIA, ANOPR, COMP])
+  @@index([CIA, CODBAN], map: "CIA")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_voucher_ret {
+  CIA    Int       @default(0)
+  ANOPR  Int       @default(0) @db.SmallInt
+  COMP   Int       @default(0)
+  NUMDOC String    @db.VarChar(12)
+  FECHA  DateTime? @db.Date
+  TIPCAM Float     @default(0.0000)
+  TOTDOL Float     @default(0.00)
+  TOTSOL Float?    @default(0.00)
+  ST700  Int       @default(0)
+  ST     Int?      @default(0) @db.SmallInt
+
+  @@id([CIA, ANOPR, COMP, NUMDOC])
+  @@index([CIA], map: "CIA")
+}
+
+model sc_voucherdet {
+  id            BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  id_sc_voucher BigInt?     @db.UnsignedBigInt
+  cia           BigInt?
+  codcon        Int?
+  cuenta        String?     @db.VarChar(8)
+  id_purchase   BigInt?     @db.UnsignedBigInt
+  tipdoc        Int?        @default(0)
+  serie         String?     @db.Char(4)
+  correlativo   String?     @db.VarChar(12)
+  glosa         String?     @db.VarChar(255)
+  impsol        Decimal?    @default(0.00) @db.Decimal(10, 2)
+  impdol        Decimal?    @default(0.00) @db.Decimal(10, 2)
+  impret        Decimal?    @default(0.00) @db.Decimal(10, 2)
+  impche        Decimal?    @default(0.00) @db.Decimal(10, 2)
+  codigo        Int?        @default(0)
+  created_at    DateTime?   @db.Timestamp(0)
+  updated_at    DateTime?   @db.Timestamp(0)
+  sc_voucher    sc_voucher? @relation(fields: [id_sc_voucher], references: [id], onDelete: Cascade, map: "sc_voucherdet_ibfk_1")
+  purchase      purchase?   @relation(fields: [id_purchase], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "sc_voucherdet_ibfk_2")
+
+  @@index([id_purchase], map: "id_purchase")
+  @@index([id_sc_voucher], map: "sc_voucherdet_cia_foreign")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sc_voucherdet_nd {
+  CIA           Int           @default(0)
+  ANOPR         Int           @default(0) @db.SmallInt
+  COMP          Int           @default(0)
+  CORREL        Int           @default(0) @db.SmallInt
+  CODIGO        Int           @default(0)
+  TIPDOC        Int           @default(0) @db.SmallInt
+  NUMDOC        String?       @db.VarChar(12)
+  ANOPR1        Int           @default(0) @db.SmallInt
+  MESPR1        Int           @default(0) @db.SmallInt
+  COMP1         Int           @default(0)
+  CODCON        Int           @default(0) @db.SmallInt
+  CUENTA        String?       @db.VarChar(8)
+  GLOSA         String?       @db.VarChar(40)
+  IMPSOL        Float         @default(0.00)
+  IMPDOL        Float         @default(0.00)
+  sc_voucher_nd sc_voucher_nd @relation(fields: [CIA, ANOPR, COMP], references: [CIA, ANOPR, COMP], onDelete: Cascade, map: "sc_voucherdet_nd_ibfk_1")
+
+  @@id([CIA, ANOPR, COMP, CORREL])
+}
+
+model series {
+  id                    BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id            BigInt    @db.UnsignedBigInt
+  serie_number          String    @db.VarChar(6)
+  branch_id             BigInt    @db.UnsignedBigInt
+  elec_document_type_id Int
+  dir_document_type_id  Int
+  status                Int       @default(1)
+  created_at            DateTime? @db.Timestamp(0)
+  updated_at            DateTime? @db.Timestamp(0)
+  branches              branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "series_branch_id_foreign")
+  companies             companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "series_company_id_foreign")
+
+  @@index([branch_id], map: "series_branch_id_foreign")
+  @@index([company_id], map: "series_company_id_foreign")
+}
+
+model sessions {
+  id            String  @id @db.VarChar(255)
+  user_id       BigInt? @db.UnsignedBigInt
+  ip_address    String? @db.VarChar(45)
+  user_agent    String? @db.Text
+  payload       String  @db.LongText
+  last_activity Int
+
+  @@index([last_activity], map: "sessions_last_activity_index")
+  @@index([user_id], map: "sessions_user_id_index")
+}
+
+model shopping_income_guide {
+  id             BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  purchase_id    BigInt        @db.UnsignedBigInt
+  entry_guide_id BigInt?       @db.UnsignedBigInt
+  created_at     DateTime?     @db.Timestamp(0)
+  updated_at     DateTime?     @db.Timestamp(0)
+  entry_guides   entry_guides? @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, map: "shopping_income_guide_entry_guide_id_foreign")
+  purchase       purchase      @relation(fields: [purchase_id], references: [id], onDelete: Cascade, map: "shopping_income_guide_purchase_id_foreign")
+
+  @@index([entry_guide_id], map: "shopping_income_guide_entry_guide_id_foreign")
+  @@index([purchase_id], map: "shopping_income_guide_purchase_id_foreign")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sire_propuesta_rce {
+  cia                        Int
+  ruc_contribuyente          String?   @db.VarChar(11)
+  razon_social_contribuyente String?   @db.VarChar(250)
+  periodo                    String    @db.VarChar(6)
+  codcar                     String    @db.VarChar(27)
+  fecha_emision              DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  fecha_vencimiento          DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  tipo_cp                    String?   @default("") @db.VarChar(2)
+  serie_cpd                  String?   @default("") @db.VarChar(20)
+  annio                      String?   @default("") @db.VarChar(4)
+  nro_cp_inicial             String?   @default("") @db.VarChar(20)
+  nro_cp_final               String?   @default("") @db.VarChar(20)
+  tipdoc_identidad           String?   @default("") @db.VarChar(2)
+  nrodoc_identidad           String?   @default("") @db.VarChar(15)
+  razon_social               String?   @default("") @db.VarChar(1500)
+  bi_grabado_dg              Decimal?  @default(0.00) @db.Decimal(12, 2)
+  igv_imp_dg                 Decimal?  @default(0.00) @db.Decimal(12, 2)
+  bi_gravado_dgng            Decimal?  @default(0.00) @db.Decimal(12, 2)
+  igv_imp_dgng               Decimal?  @default(0.00) @db.Decimal(12, 2)
+  bi_gravado_dng             Decimal?  @default(0.00) @db.Decimal(12, 2)
+  igv_imp_dng                Decimal?  @default(0.00) @db.Decimal(12, 2)
+  valor_aq_ng                Decimal?  @default(0.00) @db.Decimal(12, 2)
+  isc                        Decimal?  @default(0.00) @db.Decimal(12, 2)
+  icbper                     Decimal?  @default(0.00) @db.Decimal(12, 2)
+  otros_trib_cargos          Decimal?  @default(0.00) @db.Decimal(12, 2)
+  total_cp                   Decimal?  @default(0.00) @db.Decimal(12, 2)
+  moneda                     String?   @default("") @db.VarChar(3)
+  tipo_cambio                String?   @default("") @db.VarChar(13)
+  fec_emision_doc_mod        DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  tipo_cp_modificado         String?   @default("") @db.VarChar(2)
+  serie_cp_modificado        String?   @default("") @db.VarChar(20)
+  cod_dam_dsi                String?   @default("") @db.VarChar(3)
+  nro_cp_modificado          String?   @default("") @db.VarChar(20)
+  clasif_bss_sss             String?   @default("") @db.VarChar(1)
+  id_proyecto_ope            String?   @default("") @db.VarChar(50)
+  porcpart                   Decimal?  @default(0.00) @db.Decimal(2, 2)
+  imb                        Decimal?  @default(0.00) @db.Decimal(12, 2)
+  car_orig_ind_e_i           String?   @default("") @db.VarChar(27)
+  detraccion                 String?   @default("") @db.VarChar(1)
+  tipo_nota                  String?   @default("") @db.VarChar(2)
+  estado_comp                Int?      @default(1)
+  incal                      Int?      @default(0)
+
+  @@id([cia, periodo, codcar])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sire_propuesta_rvie {
+  cia                        Int
+  ruc_contribuyente          String?   @db.VarChar(11)
+  razon_social_contribuyente String?   @db.VarChar(250)
+  periodo                    String    @db.VarChar(6)
+  codcar                     String    @db.VarChar(27)
+  fecha_emision              DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  fecha_vencimiento          DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  tipo_cp                    String?   @default("") @db.VarChar(2)
+  serie_cpd                  String?   @default("") @db.VarChar(20)
+  nro_cp_inicial             String?   @default("") @db.VarChar(20)
+  nro_cp_final               String?   @default("") @db.VarChar(20)
+  tipdoc_identidad           String?   @default("") @db.VarChar(2)
+  nrodoc_identidad           String?   @default("") @db.VarChar(15)
+  razon_social               String?   @default("") @db.VarChar(1500)
+  valor_exportacion          Decimal?  @default(0.00) @db.Decimal(12, 2)
+  bi_grabado                 Decimal?  @default(0.00) @db.Decimal(12, 2)
+  dscto_bi                   Decimal?  @default(0.00) @db.Decimal(12, 2)
+  igv_imp                    Decimal?  @default(0.00) @db.Decimal(12, 2)
+  dscto_igv_imp              Decimal?  @default(0.00) @db.Decimal(12, 2)
+  mto_exonerado              Decimal?  @default(0.00) @db.Decimal(12, 2)
+  mto_inafecto               Decimal?  @default(0.00) @db.Decimal(12, 2)
+  isc                        Decimal?  @default(0.00) @db.Decimal(12, 2)
+  bi_grav_ivap               Decimal?  @default(0.00) @db.Decimal(12, 2)
+  ivap                       Decimal?  @default(0.00) @db.Decimal(12, 2)
+  icbper                     Decimal?  @default(0.00) @db.Decimal(12, 2)
+  otros_tributos             Decimal?  @default(0.00) @db.Decimal(12, 2)
+  total_cp                   Decimal?  @default(0.00) @db.Decimal(12, 2)
+  moneda                     String?   @default("") @db.VarChar(3)
+  tipo_cambio                Decimal?  @default(0.000) @db.Decimal(12, 3)
+  fec_emision_doc_mod        DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  tipo_cp_modificado         String?   @default("") @db.VarChar(2)
+  serie_cp_modificado        String?   @default("") @db.VarChar(20)
+  nro_cp_modificado          String?   @default("") @db.VarChar(20)
+  id_proyecto_ope            String?   @default("") @db.VarChar(50)
+  tipo_nota                  String?   @default("") @db.VarChar(2)
+  estado_comp                Int?      @default(1)
+  valor_fob_embarcado        Decimal?  @default(0.00) @db.Decimal(12, 2)
+  valor_op_gratuitas         Decimal?  @default(0.00) @db.Decimal(12, 2)
+  tipo_operacion             String?   @default("") @db.VarChar(4)
+  dam_cp                     String?   @default("") @db.VarChar(50)
+
+  @@id([cia, periodo, codcar])
+  @@index([cia, codcar], map: "cia")
+  @@index([codcar], map: "codcar")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model st_guirec {
+  CIA      Int       @default(0)
+  NUMDOC   String    @db.VarChar(12)
+  SERIE    String?   @db.VarChar(40)
+  CODART   String?   @db.VarChar(13)
+  CODIGO   Int       @default(0)
+  FECHA    DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
+  DOCREF   Int       @default(0)
+  NUMREF   String?   @db.VarChar(12)
+  FECREF   DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
+  TELEFO   String?   @db.VarChar(50)
+  EMAIL    String?   @db.VarChar(50)
+  FALLA    String?   @db.Text
+  OBS      String?   @db.Text
+  DIAGN    String?   @db.VarChar(100)
+  FECRES   DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
+  CODPRO   Int       @default(0)
+  DOCCOM   Int       @default(0)
+  NUMCOM   String?   @db.VarChar(12)
+  GUIING   String?   @db.VarChar(12)
+  FECCOM   DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  TIPO     Int?      @default(0)
+  FECENT   DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
+  DETENT   String?   @db.Text
+  SERENT   String?   @db.VarChar(20)
+  NOTCRE   String?   @db.VarChar(12)
+  GUIREM   String?   @db.VarChar(12)
+  FECREM   DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  DOCPRO   String?   @db.VarChar(20)
+  DIAGPRO  String?   @db.VarChar(120)
+  DIAG     String?   @default(" ") @db.VarChar(120)
+  ESTADO   String?   @default(" ") @db.VarChar(120)
+  SOLUCION String?   @default(" ") @db.VarChar(120)
+  COSSOL   Float     @default(0.00)
+  ST       Int       @default(0)
+  CODSUC   Int?      @default(0)
+  CONTACTO String?   @default("") @db.VarChar(200)
+  STTIPO   Int?      @default(0) @db.SmallInt
+
+  @@id([CIA, NUMDOC])
+}
+
+model statuses {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String    @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model sub_categories {
+  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String     @db.VarChar(150)
+  category_id BigInt     @db.UnsignedBigInt
+  status      Int        @default(1)
+  created_at  DateTime?  @db.Timestamp(0)
+  updated_at  DateTime?  @db.Timestamp(0)
+  image_url   String?    @db.VarChar(255)
+  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign")
+
+  @@index([category_id], map: "sub_categories_category_id_foreign")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabcaja {
+  CIA    Int     @default(0)
+  COD    Int     @default(0)
+  DES    String? @db.VarChar(25)
+  CODUSR Int     @default(0) @db.SmallInt
+  CODSUC Int     @default(0)
+
+  @@id([CIA, COD])
+}
+
+model tabcar {
+  COD Int     @id @default(0)
+  DES String? @db.VarChar(25)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabcia1 {
+  CIA       Int       @id @default(0)
+  DES       String?   @default("") @db.VarChar(50)
+  RUC       String?   @db.VarChar(11)
+  CODIGO    Int?      @default(0)
+  CAMBIO    Float?    @default(0.000) @db.Float
+  TIPMON    String?   @db.Char(1)
+  VIGENCIA  DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  FECINI    DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  NROCLI    Int?      @default(0)
+  CTAIGV    String?   @default("0.00") @db.VarChar(8)
+  CTARTA    String?   @db.VarChar(8)
+  CTAEGR    String?   @db.VarChar(8)
+  CTAING    String?   @db.VarChar(8)
+  PORIGV    Int?      @default(0)
+  CTAIGVNW  String?   @db.VarChar(8)
+  CTARTANW  String?   @db.VarChar(8)
+  CTAEGRNW  String?   @db.VarChar(8)
+  CTAINGNW  String?   @db.VarChar(8)
+  CTABAN1   String?   @default(" ") @db.VarChar(200)
+  CTABAN2   String?   @default(" ") @db.VarChar(200)
+  CTABAN3   String?   @default(" ") @db.VarChar(200)
+  CODCIA    Int?      @default(0)
+  ST        Int?      @default(0)
+  DIRECCION String?   @default("") @db.VarChar(250)
+  UBIGEO    String?   @default("") @db.VarChar(150)
+  RAZCOM    String?   @default("") @db.VarChar(150)
+  STFE      Int?      @default(0)
+  MONTOBOL  Decimal?  @default(700.00) @db.Decimal(12, 2)
+  CIACON    Int?      @default(0)
+  STOCK     Int?      @default(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabfac_resumen_fac {
+  id                     Int                      @id @default(autoincrement())
+  cia                    Int                      @default(0) @db.TinyInt
+  fecha                  DateTime                 @db.Date
+  correl                 Int                      @default(0) @db.SmallInt
+  NROTICKET              String?                  @default("") @db.VarChar(50)
+  CDR_SUNAT              String?                  @default("") @db.Char(4)
+  CDR_RESPONSE           DateTime?                @db.DateTime(0)
+  CDR_RPTA               String?                  @db.Text
+  LEIDO                  Boolean?                 @default(false)
+  tabfac_resumen_fac_det tabfac_resumen_fac_det[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabfac_resumen_fac_det {
+  id                 Int                 @id @default(autoincrement())
+  id_resumen_fac     Int?
+  cia                Int                 @default(0) @db.TinyInt
+  fecha              DateTime            @db.Date
+  correl             Int                 @default(0) @db.SmallInt
+  corr               Int                 @default(0)
+  tipdoc             Int                 @default(0) @db.TinyInt
+  numdoc             String              @default("") @db.VarChar(12)
+  tabfac_resumen_fac tabfac_resumen_fac? @relation(fields: [id_resumen_fac], references: [id], onDelete: Cascade, map: "tabfac_resumen_fac_det_ibfk_1")
+
+  @@index([id_resumen_fac], map: "id_resumen_fac")
+  @@index([cia, tipdoc, numdoc], map: "idx_cia_tipdoc_numdoc")
+  @@index([cia, fecha, correl], map: "idx_fk_resumen")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tabicbper {
+  ano       Int?
+  impicbper Decimal? @db.Decimal(12, 2)
+
+  @@ignore
+}
+
+model tabmodulo {
+  COD    Int     @id @default(0)
+  DESCRI String? @default("") @db.VarChar(50)
+  DESABR String? @default("") @db.VarChar(10)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabmon {
+  COD    Int     @id @default(0)
+  DES    String? @default("") @db.VarChar(20)
+  DESABR String? @default("") @db.Char(3)
+  CODMON String? @default(" ") @db.VarChar(3)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabpag {
+  COD    Int     @id @default(0)
+  DESCRI String? @db.VarChar(20)
+  DESABR String? @db.VarChar(7)
+  CTASOL String? @db.VarChar(8)
+  CTADOL String? @db.VarChar(8)
+  codsun Int     @default(0)
+}
+
+model tabpais {
+  COD Int     @id @default(0)
+  DES String? @default("") @db.VarChar(20)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabser {
+  CIA         Int
+  NROSER      String @db.Char(4)
+  CODSUC      Int?   @default(0)
+  ELEC_TIPDOC Int?   @default(0)
+  DIR_TIPDOC  Int?   @default(0)
+
+  @@id([CIA, NROSER])
+  @@index([CIA], map: "CIA")
+  @@index([CIA, NROSER], map: "CIA_2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tabsuc {
+  CIA      Int       @default(0)
+  COD      Int       @default(0)
+  DES      String?   @default("") @db.VarChar(20)
+  DIRSUC   String?   @db.VarChar(100)
+  TELEFONO String?   @db.VarChar(30)
+  FAX      String?   @db.VarChar(30)
+  EMAIL    String?   @db.VarChar(30)
+  DESABR   String?   @db.Char(3)
+  NUMSER   Int?      @default(0)
+  FECINI   DateTime? @db.Date
+  CIACON   Int?      @default(0)
+  SIT      Int?      @default(0)
+
+  @@id([CIA, COD])
+}
+
+model tg_tabciu {
+  CODDEP String  @default("0") @db.Char(2)
+  CODPRO String  @default("0") @db.Char(2)
+  CODDIS String  @default("0") @db.Char(2)
+  CODCIU String  @default("0") @db.VarChar(4)
+  NOMCIU String? @db.VarChar(40)
+
+  @@id([CODDEP, CODPRO, CODDIS, CODCIU])
+}
+
+model tg_tabpais {
+  COD Int     @id @default(0)
+  DES String? @default("") @db.VarChar(20)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tg_tabven {
+  CIA    Int     @default(0)
+  COD    Int     @default(0)
+  DES    String? @default("") @db.VarChar(40)
+  CODSUC Int?    @default(0)
+  SIT    Int?    @default(0)
+  PWDVEN String  @db.VarChar(12)
+  stsup  Int     @default(0)
+
+  @@id([CIA, COD])
+  @@index([PWDVEN, CIA, COD], map: "PWDVEN")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tg_tipdoc {
+  COD    Int     @id @default(0)
+  DESCRI String? @default("") @db.VarChar(30)
+  DESABR String? @default("") @db.Char(3)
+  CSUN   Int?    @default(0)
+}
+
+model tg_tipreg {
+  COD    Int     @id @default(0)
+  DES    String? @db.VarChar(30)
+  DESABR String? @db.VarChar(3)
+}
+
+model tmpdiario {
+  CIA    Int       @default(0)
+  ANOPR  Int       @default(0) @db.SmallInt
+  MESPR  Int       @default(0) @db.SmallInt
+  CODLIB Int       @default(0) @db.SmallInt
+  COMP   Int       @default(0)
+  CORREL Int       @default(0) @db.SmallInt
+  ORDEN  Int       @default(0) @db.SmallInt
+  FECHA  DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
+  CUENTA String?   @db.VarChar(8)
+  CODCEN Int       @default(0) @db.SmallInt
+  CODIGO Float?    @default(0)
+  TIPDOC Int?      @default(0)
+  NUMSER String?   @db.VarChar(4)
+  NUMDOC String?   @db.VarChar(8)
+  DOCREF Int       @default(0)
+  NUMREF String?   @db.VarChar(12)
+  FECVEN DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  GLOSA  String?   @db.VarChar(60)
+  DH     String?   @db.Char(1)
+  TIPMON Int       @default(0)
+  TIPCAM Float     @default(0.0000) @db.Float
+  IMPSOL Float     @default(0.00)
+  IMPDOL Float     @default(0.00)
+
+  @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN])
+}
+
+model transaction_logs {
+  id               BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id          BigInt          @db.UnsignedBigInt
+  role_id          BigInt          @db.UnsignedBigInt
+  role_name        String          @db.VarChar(30)
+  description_log  String          @db.VarChar(30)
+  observations     String?         @db.VarChar(255)
+  action           String          @db.VarChar(10)
+  company_id       BigInt          @db.UnsignedBigInt
+  branch_id        BigInt?         @db.UnsignedBigInt
+  document_type_id BigInt?         @db.UnsignedBigInt
+  serie            String          @db.VarChar(5)
+  correlative      String          @db.VarChar(10)
+  ip_address       String          @db.VarChar(45)
+  user_agent       String?         @db.Text
+  created_at       DateTime?       @db.Timestamp(0)
+  updated_at       DateTime?       @db.Timestamp(0)
+  branches         branches?       @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_branch_id_foreign")
+  companies        companies       @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_company_id_foreign")
+  document_types   document_types? @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_document_type_id_foreign")
+  roles            roles           @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_role_id_foreign")
+  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_user_id_foreign")
+
+  @@index([branch_id], map: "transaction_logs_branch_id_foreign")
+  @@index([company_id], map: "transaction_logs_company_id_foreign")
+  @@index([document_type_id], map: "transaction_logs_document_type_id_foreign")
+  @@index([role_id], map: "transaction_logs_role_id_foreign")
+  @@index([user_id], map: "transaction_logs_user_id_foreign")
+}
+
+model transport_companies {
+  id             BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  ruc            String           @db.VarChar(11)
+  company_name   String           @db.VarChar(100)
+  address        String           @db.VarChar(255)
+  nro_reg_mtc    String?          @db.VarChar(10)
+  status         Int              @default(1)
+  st_private     Boolean          @default(false)
+  created_at     DateTime?        @db.Timestamp(0)
+  updated_at     DateTime?        @db.Timestamp(0)
+  dispatch_notes dispatch_notes[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model updateexe {
+  COD     Int      @id @default(0)
+  ARCHIVO Bytes
+  FECHA   DateTime @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+}
+
+model user_assignments {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  company_id BigInt    @db.UnsignedBigInt
+  branch_id  BigInt    @db.UnsignedBigInt
+  status     Int       @default(1)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_assignments_branch_id_foreign")
+  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_assignments_company_id_foreign")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_assignments_user_id_foreign")
+
+  @@unique([user_id, company_id, branch_id], map: "user_assignments_user_id_company_id_branch_id_unique")
+  @@index([branch_id], map: "user_assignments_branch_id_foreign")
+  @@index([company_id], map: "user_assignments_company_id_foreign")
+}
+
+model user_menu_permissions {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  role_id    BigInt    @db.UnsignedBigInt
+  menu_id    BigInt    @db.UnsignedBigInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  menus      menus     @relation(fields: [menu_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_menu_permissions_menu_id_foreign")
+  roles      roles     @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_menu_permissions_role_id_foreign")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_menu_permissions_user_id_foreign")
+
+  @@index([menu_id], map: "user_menu_permissions_menu_id_foreign")
+  @@index([role_id], map: "user_menu_permissions_role_id_foreign")
+  @@index([user_id], map: "user_menu_permissions_user_id_foreign")
+}
+
+model users {
+  id                                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  username                              String                  @unique(map: "users_username_unique") @db.VarChar(20)
+  firstname                             String                  @db.VarChar(30)
+  lastname                              String                  @db.VarChar(60)
+  password                              String                  @db.VarChar(60)
+  status                                Int                     @default(1)
+  st_login                              Int                     @default(1)
+  failed_attempts                       Int                     @default(0)
+  password_item                         String?                 @unique(map: "users_password_item_unique") @db.VarChar(255)
+  remember_token                        String?                 @db.VarChar(100)
+  created_at                            DateTime?               @db.Timestamp(0)
+  updated_at                            DateTime?               @db.Timestamp(0)
+  articles                              articles[]
+  banks                                 banks[]
+  customer_portfolios                   customer_portfolios[]
+  digital_wallets                       digital_wallets[]
+  login_attempts                        login_attempts[]
+  sales_sales_user_authorized_idTousers sales[]                 @relation("sales_user_authorized_idTousers")
+  sales_sales_user_idTousers            sales[]                 @relation("sales_user_idTousers")
+  sales_sales_user_sale_idTousers       sales[]                 @relation("sales_user_sale_idTousers")
+  transaction_logs                      transaction_logs[]
+  user_assignments                      user_assignments[]
+  user_menu_permissions                 user_menu_permissions[]
+  visible_articles                      visible_articles[]
+}
+
+model visible_articles {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id BigInt    @db.UnsignedBigInt
+  branch_id  BigInt    @db.UnsignedBigInt
+  article_id BigInt    @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  status     Boolean   @default(true)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_article_id_foreign")
+  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_branch_id_foreign")
+  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_company_id_foreign")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_user_id_foreign")
+
+  @@index([article_id], map: "visible_articles_article_id_foreign")
+  @@index([branch_id], map: "visible_articles_branch_id_foreign")
+  @@index([company_id], map: "visible_articles_company_id_foreign")
+  @@index([user_id], map: "visible_articles_user_id_foreign")
+}
+
+model warranties {
+  id                                           BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  document_type_warranty_id                    Int
+  company_id                                   BigInt             @db.UnsignedBigInt
+  branch_id                                    BigInt             @db.UnsignedBigInt
+  branch_sale_id                               BigInt?            @db.UnsignedBigInt
+  serie                                        String             @db.VarChar(10)
+  correlative                                  String             @db.VarChar(10)
+  article_id                                   BigInt?            @db.UnsignedBigInt
+  serie_art                                    String?            @db.VarChar(50)
+  date                                         DateTime           @db.Date
+  reference_sale_id                            BigInt?            @db.UnsignedBigInt
+  customer_id                                  BigInt?            @db.UnsignedBigInt
+  customer_phone                               String?            @db.VarChar(9)
+  customer_email                               String?            @db.VarChar(150)
+  failure_description                          String?            @db.Text
+  observations                                 String?            @db.Text
+  diagnosis                                    String?            @db.Text
+  supplier_id                                  BigInt?            @db.UnsignedBigInt
+  entry_guide_id                               BigInt?            @db.UnsignedBigInt
+  contact                                      String?            @db.VarChar(100)
+  follow_up_diagnosis                          String?            @db.VarChar(150)
+  follow_up_status                             String?            @db.VarChar(150)
+  solution                                     String?            @db.VarChar(150)
+  warranty_status_id                           BigInt?            @db.UnsignedBigInt
+  solution_date                                DateTime?          @db.Date
+  delivery_description                         String?            @db.Text
+  delivery_serie_art                           String?            @db.VarChar(50)
+  credit_note_serie                            String?            @db.VarChar(10)
+  credit_note_correlative                      String?            @db.VarChar(10)
+  delivery_date                                DateTime?          @db.Date
+  dispatch_note_serie                          String?            @db.VarChar(10)
+  dispatch_note_correlative                    String?            @db.VarChar(10)
+  dispatch_note_date                           DateTime?          @db.Date
+  created_at                                   DateTime?          @db.DateTime(0)
+  updated_At                                   DateTime?          @db.DateTime(0)
+  articles                                     articles?          @relation(fields: [article_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "article_id_foreign")
+  branches_warranties_branch_idTobranches      branches           @relation("warranties_branch_idTobranches", fields: [branch_id], references: [id], onUpdate: Restrict, map: "branch_id_foreign")
+  branches_warranties_branch_sale_idTobranches branches?          @relation("warranties_branch_sale_idTobranches", fields: [branch_sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "branch_sale_id_foreign")
+  companies                                    companies          @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "company_id_foreign")
+  customers_warranties_customer_idTocustomers  customers?         @relation("warranties_customer_idTocustomers", fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "customer_id_foreign")
+  entry_guides                                 entry_guides?      @relation(fields: [entry_guide_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "entry_guide_id_foreign")
+  sales                                        sales?             @relation(fields: [reference_sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "reference_sale_id_foreign")
+  customers_warranties_supplier_idTocustomers  customers?         @relation("warranties_supplier_idTocustomers", fields: [supplier_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "supplier_id_foreign")
+  warranty_statuses                            warranty_statuses? @relation(fields: [warranty_status_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "warranty_status_id_foreign")
+
+  @@unique([company_id, branch_id, document_type_warranty_id, serie, correlative], map: "company_id")
+  @@index([article_id], map: "article_id_foreign")
+  @@index([branch_id], map: "branch_id_foreign")
+  @@index([branch_sale_id], map: "branch_sale_id_foreign")
+  @@index([company_id], map: "company_id_foreign")
+  @@index([customer_id], map: "customer_id_foreign")
+  @@index([entry_guide_id], map: "entry_guide_id_foreign")
+  @@index([reference_sale_id], map: "reference_sale_id_foreign")
+  @@index([supplier_id], map: "supplier_id_foreign")
+  @@index([warranty_status_id], map: "warranty_status_id_foreign")
+}
+
+model warranty_statuses {
+  id          BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String       @db.VarChar(100)
+  color       String?      @db.VarChar(20)
+  st_warranty Boolean?
+  st_support  Boolean?
+  status      Boolean      @default(true)
+  warranties  warranties[]
+}
+
+model withholdings {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  date       DateTime  @db.Date
+  percentage Decimal   @db.Decimal(6, 2)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model order_items {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  order_id   BigInt   @db.UnsignedBigInt
+  article_id BigInt   @db.UnsignedBigInt
+  quantity   Int      @default(1)
+  unit_price Decimal  @db.Decimal(10, 2)
+  subtotal   Decimal  @db.Decimal(10, 2)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  orders     orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_1")
+  articles   articles @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "order_items_ibfk_2")
+
+  @@index([article_id], map: "idx_order_items_article_id")
+  @@index([order_id], map: "idx_order_items_order_id")
+}
+
+model orders {
+  id          BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  client_id   BigInt         @db.UnsignedBigInt
+  total       Decimal        @default(0.00) @db.Decimal(10, 2)
+  status      orders_status? @default(processing)
+  created_at  DateTime       @default(now()) @db.Timestamp(0)
+  order_items order_items[]
+  clients     clients        @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_orders_client")
+
+  @@index([client_id], map: "fk_orders_client")
+}
+
+enum orders_status {
+  pending
+  paid
+  processing
+  shipped
+  delivered
+  cancelled
+}
