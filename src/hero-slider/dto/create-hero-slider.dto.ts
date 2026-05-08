@@ -21,4 +21,8 @@ export class CreateHeroSliderDto {
   @IsOptional()
   @Type(() => Boolean)
   active?: boolean;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
 }

@@ -2905,6 +2905,7 @@ model hero_slides {
   order      Int
   active     Boolean?  @default(true)
   created_at DateTime? @default(now()) @db.DateTime(0)
+  name       String    @db.VarChar(255)
 }
 
 enum orders_status {

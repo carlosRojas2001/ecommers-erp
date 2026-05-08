@@ -38,6 +38,7 @@ export class HeroSliderService {
         link: createHeroSliderDto.link,
         order: Number(createHeroSliderDto.order),
         active: createHeroSliderDto.active !== false,
+        name: "",
       },
     });
 
