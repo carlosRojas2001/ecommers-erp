@@ -11,6 +11,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { ArticleImageModule } from './article_images/article_image.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { OrdersModule } from './orders/orders.module';
+import { HeroSliderModule } from './hero-slider/hero-slider.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { OrdersModule } from './orders/orders.module';
     ArticleImageModule,
     ReviewsModule,
     OrdersModule,
+    HeroSliderModule,
   ],
   controllers: [],
   providers: [],

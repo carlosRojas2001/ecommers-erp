@@ -16,11 +16,11 @@ export class ArticleImageService {
     if (url.startsWith('http')) {
       return url.replace(
         /http:\/\/localhost:\d+/g,
-        this.configService.get('APP_URLS') || 'http://192.168.18.26:3000',
+        this.configService.get('APP_URL') || 'http://192.168.18.26:3000',
       );
     }
     const baseUrl =
-      this.configService.get('APP_URLS') || 'http://192.168.18.26:3000';
+      this.configService.get('APP_URL') || 'http://192.168.18.26:3000';
     return `${baseUrl}${url}`;
   }
 
