@@ -6,7 +6,7 @@ import { join } from 'path';
 import { AllExceptionsFilter } from './filter/all-exceptions.filter';
 import { ValidationPipe } from '@nestjs/common';
 
-// ✅ Debe ir PRIMERO, antes de cualquier otra cosa
+// ✅ BigInt → JSON
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
@@ -15,11 +15,17 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalPipes(new ValidationPipe({
-    // whitelist: true,
-    // forbidNonWhitelisted: true,
-    transform: true,
-  }));
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      // whitelist: true,
+      // forbidNonWhitelisted: true,
+    }),
+  );
+
+  //  Prefijo global
+  app.setGlobalPrefix('/api');
 
   app.useStaticAssets(join(__dirname, '..', 'storage'), {
     prefix: '/storage/',
@@ -34,4 +40,5 @@ async function bootstrap() {
 
   await app.listen(3000, '0.0.0.0');
 }
-bootstrap();
+
+bootstrap(); 

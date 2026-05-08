@@ -156,23 +156,23 @@ export class ArticlesService {
   },
 });
 
- const articulosRating:any[] =await Promise.all( articles.map(async (article) => {
+//  const articulosRating:any[] =await Promise.all( articles.map(async (article) => {
   
-  const rating:any[] = await this.prisma.reviews.findMany({
-    where: {
-      article_id: BigInt(article.id),
-    },
-  });
-  console.log(rating);
+//   const rating:any[] = await this.prisma.reviews.findMany({
+//     where: {
+//       article_id: BigInt(article.id),
+//     },
+//   });
+//   console.log(rating);
   
-  const average = rating.reduce((a, b) => a.rating + b.rating, 0) / rating.length;
-  // return {
-  //   ...article,
-  //   rating: average,
-  // };
- }));
+//   const average = rating.reduce((a, b) => a.rating + b.rating, 0) / rating.length;
+//   // return {
+//   //   ...article,
+//   //   rating: average,
+//   // };
+//  }));
 
-console.log(articulosRating);
+// console.log(articulosRating);
 
 
 const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
