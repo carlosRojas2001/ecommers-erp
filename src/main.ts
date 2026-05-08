@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { AllExceptionsFilter } from './filter/all-exceptions.filter';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 // ✅ BigInt → JSON
 (BigInt.prototype as any).toJSON = function () {
@@ -38,7 +39,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(3000, '0.0.0.0');
+  await app.listen(process.env.PORT || 3000, '0.0.0.0');
 }
 
 bootstrap(); 
