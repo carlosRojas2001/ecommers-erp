@@ -29,16 +29,27 @@ export class HeroSliderService {
     if (file) {
       imageUrl = `/storage/hero-slider/${file.filename}`;
     }
+    const lastSlide = await this.prisma.hero_slides.findFirst({
+      orderBy: { orden: 'desc' },
+      select: { orden: true, name:true },
+    });
 
-    const slide = await this.prisma.hero_slides.create({
+      const selectName:any[] =  await this.prisma.$queryRaw`
+         SELECT name, orden FROM hero_slides WHERE name = ${createHeroSliderDto.name}
+         ORDER BY orden ASC
+ `;   
+     
+       const nextOrden = selectName ? selectName?.[selectName.length - 1]?.orden + 1 : 0;
+    
+      const slide = await this.prisma.hero_slides.create({
       data: {
         title: createHeroSliderDto.title,
         subtitle: createHeroSliderDto.subtitle,
         image: imageUrl,
         link: createHeroSliderDto.link,
-        order: Number(createHeroSliderDto.order),
+        orden: Number(nextOrden) || 0,
         active: createHeroSliderDto.active !== false,
-        name: "",
+        name: createHeroSliderDto.name || "",
       },
     });
 
@@ -49,40 +60,49 @@ export class HeroSliderService {
     };
   }
 
-  async findAll(params: { page?: number; limit?: number; search?: string }) {
-    const { page = 1, limit = 10, search } = params;
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+async findAll(params: { search?: string, orden?: string }) {
+  const { search, orden } = params;
 
-    const where: any = {};
-    if (search) {
-      where.title = { contains: search };
-    }
+  const where: any = {};
 
-    const [slides, total] = await Promise.all([
-      this.prisma.hero_slides.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { order: 'asc' },
-      }),
-      this.prisma.hero_slides.count({ where }),
-    ]);
-
-    return {
-      data: slides.map((slide) => ({
-        ...slide,
-        id: slide.id.toString(),
-        image: this.formatImageUrl(slide.image),
-      })),
-      meta: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+  if (search) {
+    where.name = { contains: search };
   }
+
+  if (orden) {
+    where.orden = Number(orden);
+  }
+
+  const slides = await this.prisma.hero_slides.findMany({
+    where,
+    orderBy: { orden: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      image: true,
+      subtitle: true,
+      title: true,
+      orden: true,
+      active: true,
+    }
+  });
+
+  const formatted = slides.map((slide) => ({
+    ...slide,
+    id: slide.id.toString(),
+    image: this.formatImageUrl(slide.image),
+  }));
+
+  if (search === 'carrusel') {
+    return formatted;
+  }
+
+  if (search === 'side') {
+    return formatted;
+  }
+
+  return formatted[0] ?? null;
+}
 
   async findOne(id: string) {
     const slide = await this.prisma.hero_slides.findUnique({
@@ -121,7 +141,7 @@ export class HeroSliderService {
         title: updateHeroSliderDto.title !== undefined ? updateHeroSliderDto.title : existing.title,
         subtitle: updateHeroSliderDto.subtitle !== undefined ? updateHeroSliderDto.subtitle : existing.subtitle,
         link: updateHeroSliderDto.link !== undefined ? updateHeroSliderDto.link : existing.link,
-        order: updateHeroSliderDto.order !== undefined ? Number(updateHeroSliderDto.order) : existing.order,
+        orden: updateHeroSliderDto.order !== undefined ? Number(updateHeroSliderDto.order) : existing.orden,
         active: updateHeroSliderDto.active !== undefined ? updateHeroSliderDto.active : existing.active,
         image: imageUrl,
       },

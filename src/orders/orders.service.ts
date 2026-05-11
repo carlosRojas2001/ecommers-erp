@@ -12,35 +12,41 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto) {
 
     let totales = 0;
-    for (const item of createOrderDto.items) {
-      const unit_price = item.unit_price;
+    // for (const item of createOrderDto.items) {
+    
 
-      const subtotal = unit_price * item.quantity;
+    //   const subtotal = (Number(unit_price) || 0) * item.quantity;
 
-      totales += subtotal;
-    }
-
+    //   totales += subtotal;
+    // }
+     
     const orders = await this.prisma.orders.create({
       data: {
         client_id: createOrderDto.client_id,
-
-        total: totales,
+        
+        total:0,
       },
       include:{
         clients:true,
       }
     });
-
+      
     const item_irderns = await Promise.all(
-      createOrderDto.items.map((item: any) => {
-        const unit_price = item.unit_price;
-        const subtotal = unit_price * item.quantity;
-
+      createOrderDto.items.map(async (item: any) => {
+        
+        const article = await this.prisma.articles.findUnique({
+          where: {
+            id: item.article_id,
+          },
+        });
+        const unit_price = article?.public_price;
+        const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
+        
         return this.prisma.order_items.create({
           data: {
             quantity: item.quantity,
-            unit_price,
-            subtotal,
+            unit_price:unit_price || 0,
+            subtotal:subtotal,
 
             orders: {
               connect: { id: orders.id, },
@@ -57,33 +63,45 @@ export class OrdersService {
     };
 
   }
-  async findAll() {
-    const order = await this.prisma.$queryRaw`
-SELECT 
-  o.id,
-  o.client_id,
-  o.total,
-  o.status,
-  o.created_at,
+async findAll(id?: string) {
 
-  JSON_ARRAYAGG(
-    JSON_OBJECT(
-      'id', oi.id,
-      'article_id', oi.article_id,
-      'quantity', oi.quantity,
-      'unit_price', oi.unit_price,
-      'subtotal', oi.subtotal,
-      'article_description', a.description
-    )
-  ) AS items
+  const where = id
+    ? `WHERE c.id = '${id}'`
+    : '';
 
-FROM orders o
-LEFT JOIN order_items oi ON oi.order_id = o.id
-LEFT JOIN articles a ON a.id = oi.article_id
-GROUP BY o.id;
-  `;
-    return order;
-  }
+  const order = await this.prisma.$queryRawUnsafe<any[]>(`
+    SELECT 
+      o.id,
+      o.client_id,
+      o.total,
+      o.status,
+      c.id AS client_id,
+      c.names AS client_name,
+      o.created_at,
+
+      JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'id', oi.id,
+          'article_id', oi.article_id,
+          'quantity', oi.quantity,
+          'unit_price', oi.unit_price,
+          'subtotal', oi.subtotal,
+          'article_description', a.description
+        )
+      ) AS items
+
+    FROM orders o
+    LEFT JOIN order_items oi ON oi.order_id = o.id
+    LEFT JOIN articles a ON a.id = oi.article_id
+    LEFT JOIN clients c ON c.id = o.client_id
+
+    ${where}
+
+    GROUP BY o.id
+  `);
+
+  return order;
+}
 
 async  findOne(id: number) {
     const respuesta = await this.prisma.$queryRaw<any[]>`
@@ -94,19 +112,8 @@ SELECT
   c.lastnames AS client_lastnames,
   o.total,
   o.status,
-  o.created_at,
-
-  JSON_ARRAYAGG(
-      JSON_OBJECT(
-      'id', oi.id,
-      'article_id', oi.article_id,
-      'quantity', oi.quantity,
-      'unit_price', oi.unit_price,
-      'subtotal', oi.subtotal,
-      'article_description', a.description
-    )
-  ) AS items
-
+  o.created_at
+ 
 FROM orders o
 LEFT JOIN clients c ON c.id = o.client_id
 LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -117,7 +124,42 @@ GROUP BY o.id;
     if (!respuesta || respuesta.length === 0) {
       throw new BadRequestException('Orden no encontrada');
     }
-    return respuesta;
+    return respuesta[0];
+  }
+  async detalleOrdenes(id:number){
+     const order = await this.prisma.$queryRawUnsafe<any[]>(`
+    SELECT 
+      o.id,
+      o.client_id,
+      o.total,
+      o.status,
+      c.id AS client_id,
+      c.names AS client_name,
+      o.created_at,
+
+      JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'id', oi.id,
+          'article_id', oi.article_id,
+          'quantity', oi.quantity,
+          'unit_price', oi.unit_price,
+          'subtotal', oi.subtotal,
+          'article_description', a.description
+        )
+      ) AS items
+
+    FROM orders o
+    LEFT JOIN order_items oi ON oi.order_id = o.id
+    LEFT JOIN articles a ON a.id = oi.article_id
+    LEFT JOIN clients c ON c.id = o.client_id
+
+    WHERE o.id = ${id}
+
+    GROUP BY o.id
+  `);
+
+  return order[0];
+
   }
 
 
@@ -233,5 +275,17 @@ GROUP BY o.id;
 
     doc.end();
   }
-
+  
+  async masVendidos(){
+    const respuesta = await this.prisma.$queryRaw<any[]>`
+SELECT 
+  a.description,  
+  SUM(oi.quantity) AS total_vendido
+FROM order_items oi
+JOIN articles a ON a.id = oi.article_id
+GROUP BY a.id
+ORDER BY total_vendido DESC;
+  `;
+     return respuesta;
+  }
 }

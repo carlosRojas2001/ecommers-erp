@@ -40,6 +40,9 @@ export class ArticleResponseDto {
   @Expose() type: string;
   @Expose() id: number;
   @Expose() description: string;
+  @Expose()
+  @Transform(({ obj }) => obj.description)
+  name: string;
   @Expose() cod_fab: string;
 
   // @Expose()
@@ -56,9 +59,16 @@ export class ArticleResponseDto {
 })
 public_price: number;
 
-  // @Expose()
-  // @Transform(({ value }) => value ? parseFloat(value.toString()) : null)
-  // rating: number;
+  @Expose()
+  @Transform(({ value }) => (value !== undefined && value !== null ? parseFloat(value) : 0))
+  average_rating: number;
+
+  @Expose()
+  total_reviews: number;
+
+  @Expose()
+  @Type(() => ArticleImageResponseDto)
+  images: ArticleImageResponseDto[];
 
   @Expose() sold_count: number;
   @Expose() category_id: number;
@@ -86,6 +96,15 @@ public_price: number;
   article_images: ArticleImageResponseDto[];
 
   @Expose()
+  @Transform(({ value }) => {
+    if (!value) return null;
+    const baseUrl = process.env.APP_URL || 'http://192.168.18.26:3000';
+    if (value.startsWith('http')) return value;
+    return `${baseUrl}${value.startsWith('/') ? '' : '/'}${value}`;
+  })
+  image_build: string;
+
+  @Expose()
   precio_public_soles: number;
 
   @Expose()
@@ -107,110 +126,4 @@ public_price: number;
 }
 
 
-
-// import { Expose, Transform, Type } from 'class-transformer';
-
-// class MetaDto {
-//   @Expose()
-//   total: number;
-
-//   @Expose()
-//   page: number;
-
-//   @Expose()
-//   limit: number;
-
-//   @Expose()
-//   totalPages: number;
-// }
-
-// export class CategoryResponseDto {
-//   @Expose() id: string;
-//   @Expose() name: string;
-// }
-
-// export class SubCategoryResponseDto {
-//   @Expose() id: string;
-//   @Expose() name: string;
-//   @Expose() category_id: string;
-// }
-
-// export class BrandResponseDto {
-//   @Expose() id: string;
-//   @Expose() name: string;
-// }
-
-// export class ArticleImageResponseDto {
-//   @Expose()
-//   @Transform(({ value }) => value?.toString())
-//   id: string;
-
-//   @Expose()
-//   @Transform(({ value }) => {
-//     if (!value) return null;
-//     const baseUrl = process.env.APP_URL || 'http://192.168.18.26:3001';
-//     if (value.startsWith('http')) {
-//       return value.replace(/http:\/\/localhost:\d+/g, baseUrl);
-//     }
-//     return `${baseUrl}${value.startsWith('/') ? '' : '/'}${value}`;
-//   })
-//   url: string;
-
-//   @Expose() position: number;
-//   @Expose() is_main: boolean;
-// }
-
-// export class ArticleResponseDto {
-//   @Expose() type: string;
-//   @Expose() id: number;
-//   @Expose() description: string;
-//   @Expose() cod_fab: string;
-
-//   // @Expose()
-//   // @Transform(({ value }) => { if (!value) return null; const baseUrl = process.env.APP_URL || 'http://192.168.18.26:3000'; if (value.startsWith('http')) { return value.replace(/http:\/\/localhost:\d+/g, baseUrl); } return `${baseUrl}${value.startsWith('/') ? '' : '/'}${value}`; })
-//   // image_url: string;
-
-//   @Expose()
-//   @Transform(({ value }) => (value ? parseFloat(value.toString()) : null))
-//   public_price: number;
-
-//   // @Expose()
-//   // @Transform(({ value }) => value ? parseFloat(value.toString()) : null)
-//   // rating: number;
-
-//   @Expose() sold_count: number;
-//   @Expose() category_id: number;
-//   @Expose() sub_category_id: number;
-//   @Expose() brand_id: number;
-//   @Expose() stock: number;
-//   @Expose() status: number;
-//   @Expose() venta: boolean;
-//   @Expose() created_at: Date;
-//   @Expose() updated_at: Date;
-
-//   @Expose()
-//   categories: CategoryResponseDto;
-
-//   @Expose()
-//   sub_categories: SubCategoryResponseDto;
-
-//   @Expose()
-//   brands: BrandResponseDto;
-
-//   @Expose() is_new_for_web: boolean;
-//   @Expose() has_offer: boolean;
-//   @Expose() offer_price_percent: number;
-
-//   @Expose() min_stock: number;
-
-//   @Expose()
-//   @Type(() => ArticleImageResponseDto)
-//   article_images: ArticleImageResponseDto[];
-
-//   @Expose()
-//   @Type(() => MetaDto)
-//   meta: MetaDto;
-
-//   @Expose()
-//   items: any[];
-// }
+ 

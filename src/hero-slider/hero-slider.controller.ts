@@ -48,12 +48,11 @@ export class HeroSliderController {
   }
 
   @Get()
-  findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @Query('search') search?: string,
+  findAll( 
+    @Query('name') search?: string,
+    @Query('orden') orden?: string,
   ) {
-    return this.heroSliderService.findAll({ page, limit, search });
+    return this.heroSliderService.findAll({  search,orden });
   }
 
   @Get(':id')

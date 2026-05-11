@@ -245,6 +245,7 @@ model build_pc_tabla {
   status                Boolean                 @default(true)
   created_at            DateTime?               @db.Timestamp(0)
   updated_at            DateTime?               @db.Timestamp(0)
+  image_build           String?                 @db.VarChar(255)
   build_detail_pc_tabla build_detail_pc_tabla[]
   companies             companies               @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "build_pc_tabla_company_id_foreign")
 
@@ -2902,7 +2903,7 @@ model hero_slides {
   subtitle   String?   @db.VarChar(255)
   image      String    @db.VarChar(255)
   link       String?   @db.VarChar(255)
-  order      Int
+  orden      Int
   active     Boolean?  @default(true)
   created_at DateTime? @default(now()) @db.DateTime(0)
   name       String    @db.VarChar(255)

@@ -13,6 +13,8 @@ import { RegisterDto } from './dto/register.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateClientDto } from '../clients/dto/update-client.dto';
 import { randomBytes } from 'crypto';
+import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -28,7 +30,8 @@ export class AuthService {
     private readonly clientsService: ClientsService,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) { }
 
   // ─── Registro de Clientes ──────────────────────────────────────────────────
   async register(dto: RegisterDto) {
@@ -56,13 +59,13 @@ export class AuthService {
     const client = await this.clientsService.findByEmail(dto.email);
 
     if (!client || !client.password) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException('Email inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, client.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException('Contraseña inválidas');
     }
 
     return this.generateAuthResponse(client);
@@ -179,17 +182,54 @@ export class AuthService {
     }
 
     const token = randomBytes(20).toString('hex');
-    const expires = new Date(Date.now() + 3600000); // 1 hour
+    const expires = new Date(Date.now() + 3600000); 
 
     await this.clientsService.update(Number(client.id), {
       reset_token: token,
       reset_token_expires: expires,
     });
 
-    // TODO: Send email with token
+    // Configuración del servidor de correos (Ej: Gmail)
+    const transporter = nodemailer.createTransport({
+      host: this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com',
+      port: Number(this.configService.get('SMTP_PORT')) || 587,
+      secure: this.configService.get('SMTP_SECURE') === 'true', // true para puerto 465
+      auth: {
+        user: this.configService.get<string>('SMTP_USER'), // Tu correo
+        pass: this.configService.get<string>('SMTP_PASS'), // Contraseña de aplicación de tu correo
+      },
+    });
+
+    // Link hacia tu frontend con el token de seguridad
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    const smtpUser = this.configService.get<string>('SMTP_USER');
+
+    try {
+      await transporter.sendMail({
+        from: `"Soporte ERP" <${smtpUser}>`,
+        to: email, // El correo de la persona que olvidó su contraseña
+        subject: 'Recuperación de contraseña',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <h2 style="text-align: center; color: #333;">Restablecer tu contraseña</h2>
+            <p>Hola,</p>
+            <p>Hemos recibido una solicitud para cambiar la contraseña de tu cuenta. Haz clic en el siguiente botón para asignar una nueva:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" style="background-color: #007bff; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Restablecer contraseña</a>
+            </div>
+            <p style="font-size: 14px; color: #555;">Este enlace es válido por 1 hora. Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
+          </div>
+        `,
+      });
+    } catch (error) {
+      console.error('Error enviando correo:', error);
+      throw new BadRequestException('Hubo un problema intentando enviar el correo electrónico. Por favor intenta más tarde o revisa tu configuración.');
+    }
+
     return {
-      message: 'Se ha enviado un correo para restablecer la contraseña',
-      token,
+      message: 'Se ha enviado un correo con las instrucciones para restablecer la contraseña',
+      token, // En producción puedes quitar el token del return para mayor seguridad
     };
   }
 

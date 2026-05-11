@@ -7,7 +7,7 @@ import { AllExceptionsFilter } from './filter/all-exceptions.filter';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-// ✅ BigInt → JSON
+
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
