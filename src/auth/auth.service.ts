@@ -201,7 +201,7 @@ export class AuthService {
     });
 
     // Link hacia tu frontend con el token de seguridad
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://192.168.18.35:3000/';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
     const smtpUser = this.configService.get<string>('SMTP_USER');
 

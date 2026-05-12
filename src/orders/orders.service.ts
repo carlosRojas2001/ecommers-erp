@@ -12,19 +12,25 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto) {
 
     let totales = 0;
-    // for (const item of createOrderDto.items) {
-    
 
-    //   const subtotal = (Number(unit_price) || 0) * item.quantity;
+    for (const item of createOrderDto.items) {
+      
+      const consulta = await this.prisma.articles.findUnique({
+        where: {
+          id: item.article_id,
+        },
+      });
+      const unit_price = consulta?.public_price;
+      const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
 
-    //   totales += subtotal;
-    // }
+      totales += subtotal;
+    }
      
     const orders = await this.prisma.orders.create({
       data: {
         client_id: createOrderDto.client_id,
         
-        total:0,
+        total:totales,
       },
       include:{
         clients:true,
