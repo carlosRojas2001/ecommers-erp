@@ -10,6 +10,8 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  UseFilters,
+  BadRequestException,
 } from '@nestjs/common';
 import { ArticleImageService } from './article_image.service';
 import { CreateArticleImageDto } from './dto/create-article_image.dto';
@@ -19,6 +21,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { MulterExceptionFilter } from 'src/multer-exception.filter';
 
 @Controller('article-images')
 export class ArticleImageController {
@@ -26,8 +29,21 @@ export class ArticleImageController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @UseFilters(MulterExceptionFilter)
   @UseInterceptors(
     FileInterceptor('url', {
+      limits: {
+        fileSize: 1024 * 1024,
+      },
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+          return cb(
+            new BadRequestException('Solo se permiten imágenes (jpg, jpeg, png, gif, webp)'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
       storage: diskStorage({
         destination: './storage/articles',
         filename: (req, file, cb) => {
@@ -71,10 +87,20 @@ setMain(@Param('id') id: string) {
 
 @Patch(':id')
 @UseGuards(AuthGuard('jwt'), AdminGuard)
+@UseFilters(MulterExceptionFilter)
 @UseInterceptors(
   FileInterceptor('image', {
     limits: {
-      fileSize: 2 * 1024 * 1024, // 2mb
+      fileSize: 1024 * 1024,
+    },
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+        return cb(
+          new BadRequestException('Solo se permiten imágenes (jpg, jpeg, png, gif, webp)'),
+          false,
+        );
+      }
+      cb(null, true);
     },
     storage: diskStorage({
       destination: './storage/articles',
