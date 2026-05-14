@@ -8,7 +8,10 @@ export class SubCategoriesService {
   async findAll(params: { categoryId?: string; search?: string }) {
     const { categoryId, search } = params;
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (categoryId) {
       where.category_id = BigInt(categoryId);
@@ -40,7 +43,10 @@ export class SubCategoriesService {
 
     const skip = (page - 1) * limit;
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (categoryId) {
       where.category_id = BigInt(categoryId);
@@ -64,7 +70,7 @@ export class SubCategoriesService {
       data: data.map((sub) => ({
         ...sub,
         id: sub.id.toString(),
-        category_id: sub.name.toString(),
+        category_id: sub.category_id.toString(),
       })),
       meta: {
         total,
@@ -85,7 +91,10 @@ export class SubCategoriesService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (categoryId) {
       where.category_id = BigInt(categoryId);
@@ -109,7 +118,7 @@ export class SubCategoriesService {
       data: data.map((sub) => ({
         ...sub,
         id: sub.id.toString(),
-        category_id: sub.name.toString(),
+        category_id: sub.category_id.toString(),
       })),
       meta: {
         total,

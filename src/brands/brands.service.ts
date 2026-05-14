@@ -108,7 +108,10 @@ export class BrandsService {
   async findAll(params: { search?: string }) {
     const { search } = params;
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (search) {
       where.name = { contains: search };
@@ -134,7 +137,10 @@ export class BrandsService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (search) {
       where.name = { contains: search };
@@ -174,7 +180,10 @@ export class BrandsService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (search) {
       where.name = { contains: search };

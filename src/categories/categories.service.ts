@@ -112,7 +112,10 @@ export class CategoriesService {
   async findAll(params: { search?: string }) {
     const { search } = params;
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (search) {
       where.name = { contains: search };
@@ -122,7 +125,10 @@ export class CategoriesService {
       where,
       include: {
         sub_categories: {
-          where: { status: 1 },
+          where: { 
+            status: 1,
+            articles: { some: { status: 1, venta: true } }
+          },
         },
       },
       orderBy: { name: 'asc' },
@@ -149,7 +155,10 @@ export class CategoriesService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (search) {
       where.name = { contains: search };
@@ -160,7 +169,10 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: { status: 1 },
+            where: { 
+              status: 1,
+              articles: { some: { status: 1, venta: true } }
+            },
           },
         },
         skip,
@@ -199,7 +211,10 @@ export class CategoriesService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { status: 1 };
+    const where: any = { 
+      status: 1,
+      articles: { some: { status: 1, venta: true } }
+    };
 
     if (search) {
       where.name = { contains: search };
@@ -210,7 +225,10 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: { status: 1 },
+            where: { 
+              status: 1,
+              articles: { some: { status: 1, venta: true } }
+            },
           },
         },
         skip,
