@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { SubCategoriesService } from './sub-categories.service';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -7,6 +7,7 @@ import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { extname } from 'path';
 import { CreateArticleImageDto } from 'src/article_images/dto/create-article_image.dto';
 import { SubCategoriesDto } from './dto/sub-categories.dto';
+import { AllExceptionsFilter } from 'src/multer-exception.filter';
 
 @Controller('sub-categories')
 export class SubCategoriesController {
@@ -52,6 +53,7 @@ export class SubCategoriesController {
   //subir imagenes a subcategoria existentes
 @Patch('upload-image/:id')
 @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @UseFilters(AllExceptionsFilter)
 @UseInterceptors(
   FileInterceptor('image', {
     limits: {

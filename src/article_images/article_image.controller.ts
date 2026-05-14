@@ -21,7 +21,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { MulterExceptionFilter } from 'src/multer-exception.filter';
+import { AllExceptionsFilter } from 'src/multer-exception.filter';
 
 @Controller('article-images')
 export class ArticleImageController {
@@ -29,7 +29,7 @@ export class ArticleImageController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'), AdminGuard)
-  @UseFilters(MulterExceptionFilter)
+  @UseFilters(AllExceptionsFilter)
   @UseInterceptors(
     FileInterceptor('url', {
       limits: {
@@ -87,11 +87,11 @@ setMain(@Param('id') id: string) {
 
 @Patch(':id')
 @UseGuards(AuthGuard('jwt'), AdminGuard)
-@UseFilters(MulterExceptionFilter)
+@UseFilters(AllExceptionsFilter)
 @UseInterceptors(
   FileInterceptor('image', {
     limits: {
-      fileSize: 1024 * 1024,
+      fileSize: 2*1024 * 1024,
     },
     fileFilter: (req, file, cb) => {
       if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {

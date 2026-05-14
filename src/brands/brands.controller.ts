@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UseFilters,
 } from '@nestjs/common';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
@@ -19,6 +20,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { AllExceptionsFilter } from 'src/multer-exception.filter';
 
 @Controller('brands')
 export class BrandsController {
@@ -26,6 +28,7 @@ export class BrandsController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @UseFilters(AllExceptionsFilter)
   @UseInterceptors(
     FileInterceptor('image', {
       limits: {

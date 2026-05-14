@@ -10,6 +10,7 @@ import {
   UploadedFile,
   UseGuards,
   Query,
+  UseFilters,
 } from '@nestjs/common';
 import { HeroSliderService } from './hero-slider.service';
 import { CreateHeroSliderDto } from './dto/create-hero-slider.dto';
@@ -19,6 +20,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { AllExceptionsFilter } from 'src/multer-exception.filter';
 
 @Controller('hero-slider')
 export class HeroSliderController {
@@ -26,6 +28,7 @@ export class HeroSliderController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'), AdminGuard)
+    @UseFilters(AllExceptionsFilter)
   @UseInterceptors(
     FileInterceptor('image', {
        limits: {

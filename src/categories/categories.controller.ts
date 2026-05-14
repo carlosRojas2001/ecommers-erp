@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UseFilters,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -19,6 +20,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { AllExceptionsFilter } from 'src/multer-exception.filter';
 
 @Controller('categories')
 export class CategoriesController {
@@ -84,8 +86,12 @@ export class CategoriesController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @UseFilters(AllExceptionsFilter)
   @UseInterceptors(
     FileInterceptor('image', {
+      limits: {
+        fileSize: 2 * 1024 * 1024, // 2mb
+      },
       storage: diskStorage({
         destination: './storage/categories',
         filename: (req, file, cb) => {
