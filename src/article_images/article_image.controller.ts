@@ -36,7 +36,7 @@ export class ArticleImageController {
         fileSize: 1024 * 1024,
       },
       fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp|avif)$/)) {
           return cb(
             new BadRequestException('Solo se permiten imágenes (jpg, jpeg, png, gif, webp)'),
             false,
