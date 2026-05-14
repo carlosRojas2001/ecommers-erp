@@ -43,6 +43,9 @@ export class ArticlesController {
   @Post('upload-build-image/:id')
   @UseInterceptors(
     FileInterceptor('image', {
+      limits: {
+        fileSize: 2 * 1024 * 1024,
+      },
       storage: diskStorage({
         destination: './storage/builds',
         filename: (req, file, cb) => {
