@@ -16,7 +16,7 @@ export class SubCategoriesService {
     if (categoryId) {
       where.category_id = BigInt(categoryId);
     }
-
+    
     if (search) {
       where.name = { contains: search };
     }
