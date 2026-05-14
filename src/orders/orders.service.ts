@@ -276,17 +276,18 @@ GROUP BY o.id;
     doc.fontSize(10).fillColor(colorGris).text(`Fecha: ${fechaTexto}`, 250, 95, { align: 'right' });
 
     // Línea separadora
-    doc.moveTo(50, 195).lineTo(545, 195).lineWidth(1).strokeColor('#E0E0E0').stroke();
+    const separatorY = yCompany + 20;
+    doc.moveTo(50, separatorY).lineTo(545, separatorY).lineWidth(1).strokeColor('#E0E0E0').stroke();
 
     // --- DATOS DEL CLIENTE ---
     const clientName = `${order.client_names || ''} ${order.client_lastnames || ''}`.trim() || 'Cliente Desconocido';
     
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colorTexto).text('Facturado a:', 50, 210);
-    doc.font('Helvetica').fontSize(11).fillColor(colorGris).text(`Cliente: ${clientName}`, 50, 230);
-    doc.text(`Estado de Orden: ${order.status === 1 ? 'Pendiente' : order.status === 2 ? 'Completado' : 'PROCESADO'}`, 50, 245);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colorTexto).text('Facturado a:', 50, separatorY + 15);
+    doc.font('Helvetica').fontSize(11).fillColor(colorGris).text(`Cliente: ${clientName}`, 50, separatorY + 35);
+    doc.text(`Estado de Orden: PROCESADO`, 50, separatorY + 50);
 
     // --- TABLA DE PRODUCTOS ---
-    let tableTop = 275;
+    let tableTop = separatorY + 80;
     
     // Fondo del encabezado de la tabla
     doc.rect(50, tableTop, 495, 25).fillColor(colorPrimario).fill();
@@ -338,7 +339,7 @@ GROUP BY o.id;
     doc.font('Helvetica-Oblique').fontSize(10).fillColor(colorGris);
     doc.text('¡Gracias por su preferencia!', 50, totalTop + 10);
     doc.text('Si tiene alguna duda sobre esta orden, por favor contáctenos.', 50, totalTop + 25);
-    doc.text('Vendedor:CYBERHOUSE TEC', 50, totalTop + 50);
+    doc.text('Teléfono: 981206097', 50, totalTop + 50);
 
     // Pie de página
     const bottomY = doc.page.height - 50;
