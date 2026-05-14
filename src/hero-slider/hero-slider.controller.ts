@@ -28,6 +28,9 @@ export class HeroSliderController {
   @UseGuards(AuthGuard('jwt'), AdminGuard)
   @UseInterceptors(
     FileInterceptor('image', {
+       limits: {
+        fileSize: 2 * 1024 * 1024,
+      },
       storage: diskStorage({
         destination: './storage/hero-slider',
         filename: (req, file, cb) => {
