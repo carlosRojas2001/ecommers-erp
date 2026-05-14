@@ -134,7 +134,7 @@ model articles {
   @@index([measurement_unit_id], map: "articles_measurement_unit_id_foreign")
   @@index([sub_category_id], map: "articles_sub_category_id_foreign")
   @@index([user_id], map: "articles_user_id_foreign")
-}
+}   
 
 model banks {
   id                 BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
