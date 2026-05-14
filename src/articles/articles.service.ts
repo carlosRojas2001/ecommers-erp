@@ -300,6 +300,7 @@ const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
     } else if (appliedFilters.length > 0) {
       itemType = appliedFilters[0].type;
     }
+    
 
     const data = finalArticles.map((article) => ({
       type: itemType as any,
@@ -316,10 +317,30 @@ const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
       last_entry_guide: article.last_entry_guide?.toString(),
       article_type_id: article.article_type_id?.toString(),
 
-      precio_public_soles:  article.public_price  ? parseFloat(article.public_price.toString()) * dollarRate : null,
-      precio_porcentaje: ((Number(article.public_price) * dollarRate) * (1 - Number(article.offer_price_percent || 0) / 100)).toFixed(2),
-      is_new_for_web: article.is_new_for_web ? 1 : 0,
-      has_offer: article.has_offer ? 1 : 0,
+precio_public_soles: article.public_price
+  ? Number(
+      (
+        Number(article.public_price) * Number(dollarRate)
+      ).toFixed(2)
+    )
+  : null,
+
+precio_porcentaje: article.public_price
+  ? Number(
+      (
+        (
+          Number(article.public_price) * Number(dollarRate)
+        ) *
+        (
+          1 - Number(article.offer_price_percent || 0) / 100
+        )
+      ).toFixed(2)
+    )
+  : null,
+
+is_new_for_web: article.is_new_for_web ? 1 : 0,
+
+has_offer: article.has_offer ? 1 : 0,
 
       offer_price_percent: article.offer_price_percent ? Number(article.offer_price_percent) : 0,
       categories: article.categories ? { ...article.categories, id: article.categories.id.toString(),} : null,
@@ -446,10 +467,31 @@ const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
         last_supplier: article.last_supplier?.toString(),
         last_entry_guide: article.last_entry_guide?.toString(),
         article_type_id: article.article_type_id?.toString(),
-        precio_public_soles: article.public_price ? parseFloat(article.public_price.toString()) * dollarRate : null,
-        precio_porcentaje: ((Number(article.public_price) * dollarRate) * (Number(article.offer_price_percent || 0))).toFixed(2),
-        is_new_for_web: article.is_new_for_web ? 1 : 0,
-        has_offer: article.has_offer ? 1 : 0,
+        precio_public_soles: article.public_price
+  ? Number(
+      (
+        Number(article.public_price) * Number(dollarRate)
+      ).toFixed(2)
+    )
+  : null,
+
+precio_porcentaje: article.public_price
+  ? Number(
+      (
+        (
+          Number(article.public_price) * Number(dollarRate)
+        ) *
+        (
+          1 - Number(article.offer_price_percent || 0) / 100
+        )
+      ).toFixed(2)
+    )
+  : null,
+
+is_new_for_web: article.is_new_for_web ? 1 : 0,
+
+has_offer: article.has_offer ? 1 : 0,
+
         offer_price_percent: article.offer_price_percent ? Number(article.offer_price_percent) : 0,
         categories: article.categories ? { ...article.categories, id: article.categories.id.toString() } : null,
         brands: article.brands ? { ...article.brands, id: article.brands.id.toString() } : null,

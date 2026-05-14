@@ -3,6 +3,8 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class OrdersService {
@@ -170,14 +172,13 @@ GROUP BY o.id;
 
 
   async generatePdf(id: number, res: Response): Promise<void> {
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="orden-${id}.pdf"`,
-    );
-
+    ); 
 
     doc.on('error', (err) => {
       console.error('PDF error:', err);
@@ -188,8 +189,7 @@ GROUP BY o.id;
       console.error('Response error:', err);
     });
 
-    doc.pipe(res);
-
+    doc.pipe(res); 
 
     // Buscar datos de la orden en la base de datos
     const orders: any[] = await this.prisma.$queryRaw`
@@ -224,60 +224,127 @@ GROUP BY o.id;
       return;
     }
 
-    const order = orders[0];
-    // Convertir items de texto a array si es necesario
+    const order = orders[0]; 
     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
 
-    // Dibujar el PDF con los datos reales
-    doc.fontSize(20).text('Comprobante de Orden', { align: 'center' });
-    doc.moveDown();
+    // --- ENCABEZADO ---
+    // Colores y fuentes
+    const colorPrimario = '#D32F2F'; // Rojo Cyberhouse
+    const colorTexto = '#333333';
+    const colorGris = '#777777';
 
-    doc.fontSize(12).text(`Orden ID: #${order.id}`);
-
-    // Manejo de fecha segura
-    let fechaTexto = 'Desconocida';
-    if (order.created_at) {
-      fechaTexto = new Date(order.created_at).toLocaleDateString();
+    // Logo / Nombre de Empresa
+    const logoPath = path.join(process.cwd(), 'storage', 'logociberhouse.jpeg');
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 50, 30, { width: 180 });
+    } else {
+      doc.font('Helvetica-Bold').fontSize(24).fillColor(colorPrimario).text('CYBERHOUSE', 50, 50, { continued: true }).fillColor('#000000').text('TEC');
     }
-    doc.text(`Fecha: ${fechaTexto}`);
+    
+    // Datos de la empresa
+    doc.fontSize(10).fillColor(colorGris);
+    let yCompany = 85;
+    doc.text('RUC: 20614604825', 50, yCompany);
+    yCompany += 15;
+    doc.text('Dirección: AV. INCA GARCILASO DE LA VEGA NRO. 1348', 50, yCompany);
+    yCompany += 12;
+    doc.text('(INT 1049-1053 PISO 1 REF. TDA 1A 164-141) LIMA', 50, yCompany);
+    yCompany += 15;
+    doc.text('Teléfono: 981206097', 50, yCompany);
+    yCompany += 20;
 
-    // Mostrar nombre del cliente en lugar del ID
-    const clientName = `${order.client_names || ''} ${order.client_lastnames || ''}`.trim() || 'Cliente Desconocido';
-    doc.text(`Cliente: ${clientName}`);
-
-    doc.moveTo(50, 150).lineTo(550, 150).stroke();
-    doc.moveDown(2);
-
-    // Títulos de la tabla
-    let tableTop = 180;
-    doc.font('Helvetica-Bold');
-    doc.text('Descripción', 50, tableTop);
-    doc.text('Cant', 300, tableTop);
-    doc.text('Precio', 380, tableTop);
-    doc.text('Subtotal', 460, tableTop);
-
-    doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
-
-    // Dibujar los items
-    let y = tableTop + 25;
+    doc.font('Helvetica-Bold').text('Cuentas Bancarias:', 50, yCompany);
     doc.font('Helvetica');
+    yCompany += 12;
+    doc.text('BCO. CREDITO SOLES: 191-7319236-0-75', 50, yCompany);
+    yCompany += 12;
+    doc.text('BCO. CREDITO DOLARES: 191-7320109-1-03', 50, yCompany);
+    yCompany += 12;
+    doc.text('BCO. CONTINENTAL SOLES: 0011-0175-0100099775', 50, yCompany);
+    yCompany += 12;
+    doc.text('BCO. CONTINENTAL DOLARES: 0011-0175-0100099783', 50, yCompany);
+
+    // Datos del Comprobante (Alineado a la derecha)
+    doc.font('Helvetica-Bold').fontSize(16).fillColor(colorTexto).text('COMPROBANTE DE ORDEN', 250, 50, { align: 'right' });
+    
+    doc.fontSize(12).fillColor(colorPrimario).text(`N° Orden: #${String(order.id).padStart(6, '0')}`, 250, 75, { align: 'right' });
+    
+    let fechaTexto = 'PROCESADO';
+    if (order.created_at) {
+      fechaTexto = new Date(order.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    doc.fontSize(10).fillColor(colorGris).text(`Fecha: ${fechaTexto}`, 250, 95, { align: 'right' });
+
+    // Línea separadora
+    doc.moveTo(50, 195).lineTo(545, 195).lineWidth(1).strokeColor('#E0E0E0').stroke();
+
+    // --- DATOS DEL CLIENTE ---
+    const clientName = `${order.client_names || ''} ${order.client_lastnames || ''}`.trim() || 'Cliente Desconocido';
+    
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colorTexto).text('Facturado a:', 50, 210);
+    doc.font('Helvetica').fontSize(11).fillColor(colorGris).text(`Cliente: ${clientName}`, 50, 230);
+    doc.text(`Estado de Orden: ${order.status === 1 ? 'Pendiente' : order.status === 2 ? 'Completado' : 'PROCESADO'}`, 50, 245);
+
+    // --- TABLA DE PRODUCTOS ---
+    let tableTop = 275;
+    
+    // Fondo del encabezado de la tabla
+    doc.rect(50, tableTop, 495, 25).fillColor(colorPrimario).fill();
+    
+    // Texto del encabezado de la tabla
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('#FFFFFF');
+    doc.text('DESCRIPCIÓN', 60, tableTop + 8);
+    doc.text('CANT.', 320, tableTop + 8, { width: 50, align: 'center' });
+    doc.text('PRECIO UNIT.', 380, tableTop + 8, { width: 70, align: 'right' });
+    doc.text('SUBTOTAL', 460, tableTop + 8, { width: 75, align: 'right' });
+
+    let y = tableTop + 35;
+    doc.font('Helvetica').fontSize(10).fillColor(colorTexto);
 
     if (items && Array.isArray(items)) {
-      for (const item of items) {
-        if (!item.article_description) continue; // Evitar items vacíos si no hay productos
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item.article_description) continue;
 
-        doc.text(item.article_description.substring(0, 40), 50, y);
-        doc.text(item.quantity.toString(), 300, y);
-        doc.text(`$${Number(item.unit_price).toFixed(2)}`, 380, y);
-        doc.text(`$${Number(item.subtotal).toFixed(2)}`, 460, y);
+        // Fila sombreada alterna
+        if (i % 2 === 1) {
+            doc.rect(50, y - 5, 495, 20).fillColor('#F9F9F9').fill();
+            doc.fillColor(colorTexto);
+        }
+
+        doc.text(item.article_description.substring(0, 50), 60, y);
+        doc.text(item.quantity.toString(), 320, y, { width: 50, align: 'center' });
+        doc.text(`$${Number(item.unit_price).toFixed(2)}`, 380, y, { width: 70, align: 'right' });
+        doc.text(`$${Number(item.subtotal).toFixed(2)}`, 460, y, { width: 75, align: 'right' });
 
         y += 20;
       }
     }
 
-    doc.moveTo(50, y + 10).lineTo(550, y + 10).stroke();
-    doc.font('Helvetica-Bold');
-    doc.text(`Total: $${Number(order.total).toFixed(2)}`, 380, y + 25);
+    // Línea separadora final de tabla
+    doc.moveTo(50, y + 5).lineTo(545, y + 5).lineWidth(1).strokeColor('#E0E0E0').stroke();
+
+    // --- TOTALES ---
+    const totalTop = y + 15;
+    
+    // Recuadro para el total
+    doc.rect(350, totalTop, 195, 30).fillColor('#F0F0F0').fill();
+    
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(colorTexto);
+    doc.text('TOTAL:', 360, totalTop + 9);
+    doc.font('Helvetica-Bold').fontSize(14).fillColor(colorPrimario).text(`$${Number(order.total).toFixed(2)}`, 400, totalTop + 8, { width: 135, align: 'right' });
+
+    // Mensaje de agradecimiento
+    doc.font('Helvetica-Oblique').fontSize(10).fillColor(colorGris);
+    doc.text('¡Gracias por su preferencia!', 50, totalTop + 10);
+    doc.text('Si tiene alguna duda sobre esta orden, por favor contáctenos.', 50, totalTop + 25);
+    doc.text('Vendedor:CYBERHOUSE TEC', 50, totalTop + 50);
+
+    // Pie de página
+    const bottomY = doc.page.height - 50;
+    doc.moveTo(50, bottomY - 10).lineTo(545, bottomY - 10).lineWidth(0.5).strokeColor('#E0E0E0').stroke();
+    doc.font('Helvetica').fontSize(8).fillColor('#999999');
+    doc.text('Este documento es un comprobante de orden generado electrónicamente.', 50, bottomY, { align: 'center', width: 495 });
 
     doc.end();
   }

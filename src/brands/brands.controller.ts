@@ -28,6 +28,9 @@ export class BrandsController {
   @UseGuards(AuthGuard('jwt'), AdminGuard)
   @UseInterceptors(
     FileInterceptor('image', {
+      limits: {
+        fileSize: 2 * 1024 * 1024, // 5mb
+      },
       storage: diskStorage({
         destination: './storage/brands',
         filename: (req, file, cb) => {

@@ -28,6 +28,9 @@ export class CategoriesController {
   @UseGuards(AuthGuard('jwt'), AdminGuard)
   @UseInterceptors(
     FileInterceptor('image', {
+      limits: {
+        fileSize: 2 * 1024 * 1024, // 2mb
+      },
       storage: diskStorage({
         destination: './storage/categories',
         filename: (req, file, cb) => {

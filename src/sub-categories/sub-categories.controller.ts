@@ -54,6 +54,9 @@ export class SubCategoriesController {
 @UseGuards(AuthGuard('jwt'), AdminGuard)
 @UseInterceptors(
   FileInterceptor('image', {
+    limits: {
+      fileSize: 2 * 1024 * 1024, // 5mb
+    },
     storage: diskStorage({
       destination: './storage/sub-categories',
       filename: (req, file, cb) => {
