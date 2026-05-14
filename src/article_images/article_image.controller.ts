@@ -33,7 +33,7 @@ export class ArticleImageController {
   @UseInterceptors(
     FileInterceptor('url', {
       limits: {
-        fileSize: 1024 * 1024,
+        fileSize: 2 * 1024 * 1024,
       },
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp|avif)$/)) {
