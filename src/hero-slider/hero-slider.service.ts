@@ -133,6 +133,18 @@ async findAll(params: { search?: string, orden?: string }) {
     let imageUrl = existing.image;
     if (file) {
       imageUrl = `/storage/hero-slider/${file.filename}`;
+      if (existing.image) {
+        const fs = require('fs');
+        const path = require('path');
+        const oldImagePath = path.join(process.cwd(), existing.image);
+        if (fs.existsSync(oldImagePath)) {
+          try {
+            fs.unlinkSync(oldImagePath);
+          } catch (error) {
+            console.error('Error deleting old image:', error);
+          }
+        }
+      }
     }
 
     const slide = await this.prisma.hero_slides.update({
@@ -143,6 +155,7 @@ async findAll(params: { search?: string, orden?: string }) {
         link: updateHeroSliderDto.link !== undefined ? updateHeroSliderDto.link : existing.link,
         orden: updateHeroSliderDto.order !== undefined ? Number(updateHeroSliderDto.order) : existing.orden,
         active: updateHeroSliderDto.active !== undefined ? updateHeroSliderDto.active : existing.active,
+        name: updateHeroSliderDto.name !== undefined ? updateHeroSliderDto.name : existing.name,
         image: imageUrl,
       },
     });
@@ -156,9 +169,34 @@ async findAll(params: { search?: string, orden?: string }) {
 
   async remove(id: string) {
     const slideId = BigInt(id);
-    const slide = await this.prisma.hero_slides.delete({
+    
+    // First find the slide to get the image path
+    const slide = await this.prisma.hero_slides.findUnique({
       where: { id: slideId },
     });
+
+    if (!slide) {
+      throw new NotFoundException('Hero slider no encontrado');
+    }
+
+    // Delete from database
+    await this.prisma.hero_slides.delete({
+      where: { id: slideId },
+    });
+
+    // Delete image from disk if it exists
+    if (slide.image) {
+      const fs = require('fs');
+      const path = require('path');
+      const imagePath = path.join(process.cwd(), slide.image);
+      if (fs.existsSync(imagePath)) {
+        try {
+          fs.unlinkSync(imagePath);
+        } catch (error) {
+          console.error('Error deleting image during removal:', error);
+        }
+      }
+    }
 
     return {
       ...slide,

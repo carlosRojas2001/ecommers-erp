@@ -320,7 +320,19 @@ const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
 precio_public_soles: article.public_price
   ? Number(
       (
-        Number(article.public_price) * Number(dollarRate)
+        article.currency_type_id?.toString() === '1'
+          ? Number(article.public_price)
+          : Number(article.public_price) * Number(dollarRate)
+      ).toFixed(2)
+    )
+  : null,
+
+precio_public_dolares: article.public_price
+  ? Number(
+      (
+        article.currency_type_id?.toString() === '2'
+          ? Number(article.public_price)
+          : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
       ).toFixed(2)
     )
   : null,
@@ -329,7 +341,24 @@ precio_porcentaje: article.public_price
   ? Number(
       (
         (
-          Number(article.public_price) * Number(dollarRate)
+          article.currency_type_id?.toString() === '1'
+            ? Number(article.public_price)
+            : Number(article.public_price) * Number(dollarRate)
+        ) *
+        (
+          1 - Number(article.offer_price_percent || 0) / 100
+        )
+      ).toFixed(2)
+    )
+  : null,
+
+precio_porcentaje_dolares: article.public_price
+  ? Number(
+      (
+        (
+          article.currency_type_id?.toString() === '2'
+            ? Number(article.public_price)
+            : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
         ) *
         (
           1 - Number(article.offer_price_percent || 0) / 100
@@ -386,7 +415,20 @@ has_offer: article.has_offer ? 1 : 0,
           : null,
         public_price_soles: detail.articles.public_price
           ? parseFloat(
-              (parseFloat(detail.articles.public_price.toString()) * dollarRate).toFixed(2),
+              (
+                detail.articles.currency_type_id?.toString() === '1'
+                  ? parseFloat(detail.articles.public_price.toString())
+                  : parseFloat(detail.articles.public_price.toString()) * dollarRate
+              ).toFixed(2),
+            )
+          : null,
+        public_price_dolares: detail.articles.public_price
+          ? parseFloat(
+              (
+                detail.articles.currency_type_id?.toString() === '2'
+                  ? parseFloat(detail.articles.public_price.toString())
+                  : dollarRate > 0 ? parseFloat(detail.articles.public_price.toString()) / dollarRate : 0
+              ).toFixed(2),
             )
           : null,
         category: detail.articles.categories
@@ -470,7 +512,19 @@ has_offer: article.has_offer ? 1 : 0,
         precio_public_soles: article.public_price
   ? Number(
       (
-        Number(article.public_price) * Number(dollarRate)
+        article.currency_type_id?.toString() === '1'
+          ? Number(article.public_price)
+          : Number(article.public_price) * Number(dollarRate)
+      ).toFixed(2)
+    )
+  : null,
+
+precio_public_dolares: article.public_price
+  ? Number(
+      (
+        article.currency_type_id?.toString() === '2'
+          ? Number(article.public_price)
+          : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
       ).toFixed(2)
     )
   : null,
@@ -479,7 +533,24 @@ precio_porcentaje: article.public_price
   ? Number(
       (
         (
-          Number(article.public_price) * Number(dollarRate)
+          article.currency_type_id?.toString() === '1'
+            ? Number(article.public_price)
+            : Number(article.public_price) * Number(dollarRate)
+        ) *
+        (
+          1 - Number(article.offer_price_percent || 0) / 100
+        )
+      ).toFixed(2)
+    )
+  : null,
+
+precio_porcentaje_dolares: article.public_price
+  ? Number(
+      (
+        (
+          article.currency_type_id?.toString() === '2'
+            ? Number(article.public_price)
+            : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
         ) *
         (
           1 - Number(article.offer_price_percent || 0) / 100
@@ -558,8 +629,21 @@ has_offer: article.has_offer ? 1 : 0,
             : null,
           public_price_soles: detail.articles.public_price
             ? parseFloat(
-              (parseFloat(detail.articles.public_price.toString()) * dollarRate).toFixed(2),
-            )
+                (
+                  detail.articles.currency_type_id?.toString() === '1'
+                    ? parseFloat(detail.articles.public_price.toString())
+                    : parseFloat(detail.articles.public_price.toString()) * dollarRate
+                ).toFixed(2),
+              )
+            : null,
+          public_price_dolares: detail.articles.public_price
+            ? parseFloat(
+                (
+                  detail.articles.currency_type_id?.toString() === '2'
+                    ? parseFloat(detail.articles.public_price.toString())
+                    : dollarRate > 0 ? parseFloat(detail.articles.public_price.toString()) / dollarRate : 0
+                ).toFixed(2),
+              )
             : null,
           category: detail.articles.categories
             ? {
