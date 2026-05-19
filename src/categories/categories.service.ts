@@ -260,7 +260,11 @@ export class CategoriesService {
   }
   async filterSubcategories(id: string) {
     const subCategories = await this.prisma.sub_categories.findMany({
-      where: { category_id: BigInt(id), status: 1 },
+      where: {
+        category_id: BigInt(id),
+        status: 1,
+        articles: { some: { status: 1, venta: true } },
+      },
     });
     return subCategories.map((sub) => ({
       ...sub,

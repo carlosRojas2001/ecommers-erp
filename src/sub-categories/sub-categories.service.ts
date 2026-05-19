@@ -8,7 +8,7 @@ export class SubCategoriesService {
   async findAll(params: { categoryId?: string; search?: string }) {
     const { categoryId, search } = params;
 
-    const where: any = { 
+    const where: any = {
       status: 1,
       articles: { some: { status: 1, venta: true } }
     };
