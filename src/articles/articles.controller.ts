@@ -1,7 +1,7 @@
 import {
   Controller,
-  Get, 
-  Param, 
+  Get,
+  Param,
   Query,
   Post,
   UseInterceptors,
@@ -10,34 +10,29 @@ import {
 import { ArticlesService } from './articles.service';
 import { Serialize } from 'src/common/interceptors/serialize.interceptor';
 import { ArticleResponseDto } from './dto/article-response.dto';
+import { FindArticlesQueryDto } from './dto/find-articles-query.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @Controller('articles')
 export class ArticlesController {
-  constructor(private readonly articlesService: ArticlesService) {}
+  constructor(
+    private readonly articlesService: ArticlesService,
+  ) { }
+
+  // @Serialize(ArticleResponseDto)
+  @Get('slug/:slug')
+  async findBySlug(
+    @Param('slug') slug: string,
+  ) {
+    return this.articlesService.findBySlug(slug);
+  }
 
   @Serialize(ArticleResponseDto)
   @Get()
-  findAll(@Query() query: any) {
-    return this.articlesService.findAll({
-      page: query.page ? +query.page : 1,
-      limit: query.limit ? +query.limit : 10,
-      search: query.search,
-      minPrice: query.minPrice ? +query.minPrice : undefined,
-      maxPrice: query.maxPrice ? +query.maxPrice : undefined,
-      categoryId: query.categoryId ? +query.categoryId : undefined,
-      subCategoryId: query.subCategoryId ? +query.subCategoryId : undefined,
-      brandId: query.brandId ? +query.brandId : undefined,
-      inStock: query.inStock === 'true',
-      sort: query.sort,
-      exclude: query.exclude ? +query.exclude : undefined,
-      nuevos: query.nuevos,
-      ofertas: query.ofertas,
-      type: query.type,
-      aleatorio: query.aleatorio === 'true',
-    });
+  async findAll(@Query() query: FindArticlesQueryDto) {
+    return this.articlesService.findAll(query);
   }
 
   @Post('upload-build-image/:id')

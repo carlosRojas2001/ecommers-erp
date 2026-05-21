@@ -1,31 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { FindArticlesQueryDto } from './dto/find-articles-query.dto';
+import { ArticleMapper } from './mappers/article.mapper';
+import { SYNONYM_MAP } from './utils/search-synonyms';
 
 @Injectable()
 export class ArticlesService {
-  constructor(
-    private prisma: PrismaService,
-    private configService: ConfigService,
+  constructor(private prisma: PrismaService,
+              private configService: ConfigService,
   ) { }
-  async findAll(params: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    categoryId?: number;
-    subCategoryId?: number;
-    brandId?: number;
-    inStock?: boolean;
-    sort?: string;
-    exclude?: number;
-    nuevos?: boolean;
-    ofertas?: boolean;
-    type?: string;
-    aleatorio?: boolean;
-  }) {
+
+  async findAll(params: FindArticlesQueryDto) {
     const {
       page = 1,
       limit = 10,
@@ -52,17 +38,7 @@ export class ArticlesService {
     };
 
     if (search) {
-      const rawTerms = search.toLowerCase().trim().split(/\s+/);
-
-      const synonymMap: Record<string, string[]> = {
-        laptop: ['notebook', 'laptop', 'portatil'],
-        laptops: ['notebook', 'laptop', 'portatil'],
-        notebook: ['laptop', 'notebook', 'portatil'],
-        computadora: ['computador', 'desktop'],
-        computadoras: ['computador', 'desktop'],
-        celular: ['telefono', 'smartphone', 'movil'],
-        celulares: ['telefono', 'smartphone', 'movil'],
-      };
+      const rawTerms = search.toLowerCase().trim().split(/\s+/); 
 
       where.AND = rawTerms.map((originalTerm) => {
         let term = originalTerm;
@@ -73,10 +49,9 @@ export class ArticlesService {
           new Set([
             originalTerm,
             term,
-            ...(synonymMap[originalTerm] || []),
-            ...(synonymMap[term] || []),
-          ]),
-        // Filtrar términos muy cortos que generan falsos positivos (ej: "pc" → PCIE)
+            ...(SYNONYM_MAP[originalTerm] || []),
+            ...(SYNONYM_MAP[term] || []),
+          ]), 
         ).filter((t) => t.length >= 4);
 
         // Si no quedan términos válidos, usar el término original directamente
@@ -117,8 +92,7 @@ export class ArticlesService {
       };
     }
 
-    //  schema original usa 'min_stock'
-    if (inStock) {
+    if (inStock) { 
       where.min_stock = { gt: 0 };
     }
 
@@ -135,8 +109,7 @@ export class ArticlesService {
     }
 
     // ── Inteligencia de Type Filter ──────────────────────────────────────────
-    // Si envían type='brand' y un search, intentamos buscar esa marca y filtrar por ella
-    if (search && type) {
+    if (search && type) { 
       if (type === 'brand') {
         const brand = await this.prisma.brands.findFirst({
           where: { name: { contains: search } },
@@ -158,20 +131,16 @@ export class ArticlesService {
       }
     }
 
-    //  schema original usa 'date_at'
-    let orderBy: any = { date_at: 'desc' };
+    let orderBy: any = { date_at: 'desc' }; 
     if (sort === 'price_asc') orderBy = { public_price: 'asc' };
     if (sort === 'price_desc') orderBy = { public_price: 'desc' };
     if (sort === 'newest') orderBy = { date_at: 'desc' };
 
-    // Si es aleatorio, no usamos el skip/take tradicional de la misma forma si queremos real aleatoriedad
-    // Pero para simplificar, si es aleatorio y no hay sort, barajamos
-    
     const [articles, total] = await Promise.all([
       type === 'combo' ? Promise.resolve([]) : this.prisma.articles.findMany({
         where,
         skip: aleatorio ? undefined : skip,
-        take: aleatorio ? 100 : limit, // Traemos más para barajar si es aleatorio
+        take: aleatorio ? 100 : limit,
         orderBy,
         include: {
           categories: true,
@@ -191,11 +160,8 @@ export class ArticlesService {
       finalArticles = articles.sort(() => Math.random() - 0.5).slice(0, limit);
     }
 
-    // ── Combos (build_pc_tabla) ──────────────────────────────────────────────
-    // Un combo aparece si su nombre coincide con el search
-    // OR si contiene artículos de la categoría/marca/subcategoría buscada.
-    const needCombos = !!(search || categoryId || subCategoryId || brandId);
-
+    // ── Combos (build_pc_tabla) ────────────────────────────────────────────── 
+    const needCombos = !!(search || categoryId || subCategoryId || brandId); 
     const comboOrConditions: any[] = [];
 
     if (search) {
@@ -205,8 +171,7 @@ export class ArticlesService {
       );
 
       if (isComputerSearch) {
-        // Si busca computadoras, traer todos los combos activos por defecto o por coincidencia
-        comboOrConditions.push({ status: true });
+        comboOrConditions.push({ status: true }); 
       } else {
         comboOrConditions.push({ name: { contains: search } });
         comboOrConditions.push({ description: { contains: search } });
@@ -227,8 +192,7 @@ export class ArticlesService {
         build_detail_pc_tabla: { some: { articles: articleFilter } },
       });
     }
-
-    // Si hay más de una condición usar OR, si hay una sola usarla directa
+  
     const comboWhere: any =
       comboOrConditions.length > 1
         ? { OR: comboOrConditions }
@@ -236,8 +200,7 @@ export class ArticlesService {
           ? comboOrConditions[0]
           : {};
 
-    // Si se pide específicamente type brand o category y no hay combos relacionados, no traer combos
-    const skipCombos = type === 'article' || (type === 'brand' && !brandId) || (type === 'category' && !categoryId);
+    const skipCombos = type === 'article' || (type === 'brand' && !brandId) || (type === 'category' && !categoryId); 
 
     const rawCombos = (needCombos && !skipCombos) || type === 'combo'
       ? await this.prisma.build_pc_tabla.findMany({
@@ -261,16 +224,8 @@ export class ArticlesService {
         })
       : [];
 
-
-    // ── Tipo de cambio ───────────────────────────────────────────────────────
-   const exchangeRate = await this.prisma.exchange_rates.findFirst({
-  orderBy: {
-    date: 'desc',
-  },
-});
- 
-
-const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = await this.getDollarRate();
+    const baseUrl = this.configService.get('APP_URL') || 'http://192.168.18.26:3000';
 
     // ── Resolver nombres de filtros aplicados ─────────────────────────────
     const appliedFilters: { type: string; id: string; name: string }[] = [];
@@ -299,159 +254,15 @@ const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
     } else if (appliedFilters.length > 0) {
       itemType = appliedFilters[0].type;
     }
-    
 
-    const data = finalArticles.map((article) => ({
-      type: itemType as any,
-      ...article,
-      id: article.id.toString(),
-      measurement_unit_id: article.measurement_unit_id?.toString(),
-      brand_id: article.brand_id?.toString(),
-      category_id: article.category_id?.toString(),
-      sub_category_id: article.sub_category_id?.toString(),
-      currency_type_id: article.currency_type_id?.toString(),
-      company_type_id: article.company_type_id?.toString(),
-      user_id: article.user_id?.toString(),
-      last_supplier: article.last_supplier?.toString(),
-      last_entry_guide: article.last_entry_guide?.toString(),
-      article_type_id: article.article_type_id?.toString(),
+    const data = finalArticles.map((article) =>
+      ArticleMapper.toArticleResponse(article, dollarRate, baseUrl, itemType)
+    );
 
-precio_public_soles: article.public_price
-  ? Number(
-      (
-        article.currency_type_id?.toString() === '1'
-          ? Number(article.public_price)
-          : Number(article.public_price) * Number(dollarRate)
-      ).toFixed(2)
-    )
-  : null,
+    const formattedCombos = finalCombos.map((combo) =>
+      ArticleMapper.toComboResponse(combo, dollarRate, baseUrl)
+    );
 
-precio_public_dolares: article.public_price
-  ? Number(
-      (
-        article.currency_type_id?.toString() === '2'
-          ? Number(article.public_price)
-          : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
-      ).toFixed(2)
-    )
-  : null,
-
-precio_porcentaje: article.public_price
-  ? Number(
-      (
-        (
-          article.currency_type_id?.toString() === '1'
-            ? Number(article.public_price)
-            : Number(article.public_price) * Number(dollarRate)
-        ) *
-        (
-          1 - Number(article.offer_price_percent || 0) / 100
-        )
-      ).toFixed(2)
-    )
-  : null,
-
-precio_porcentaje_dolares: article.public_price
-  ? Number(
-      (
-        (
-          article.currency_type_id?.toString() === '2'
-            ? Number(article.public_price)
-            : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
-        ) *
-        (
-          1 - Number(article.offer_price_percent || 0) / 100
-        )
-      ).toFixed(2)
-    )
-  : null,
-
-is_new_for_web: article.is_new_for_web ? 1 : 0,
-
-has_offer: article.has_offer ? 1 : 0,
-
-      offer_price_percent: article.offer_price_percent ? Number(article.offer_price_percent) : 0,
-      categories: article.categories ? { ...article.categories, id: article.categories.id.toString(),} : null,
-      brands: article.brands ? { ...article.brands, id: article.brands.id.toString(),} : null,
-      public_price: article.public_price ? parseFloat(article.public_price.toString()) : null,
-      purchase_price: article.purchase_price ? parseFloat(article.purchase_price.toString()) : null,
-      distributor_price: article.distributor_price ? parseFloat(article.distributor_price.toString()) : null,
-      authorized_price: article.authorized_price ? parseFloat(article.authorized_price.toString()) : null,
-      article_images: article.article_images,
-      total_reviews: article.reviews.length,
-      name: article.description,
-      average_rating:
-        article.reviews.length > 0
-          ? parseFloat(
-              (
-                article.reviews.reduce((sum, r) => sum + r.rating, 0) /
-                article.reviews.length
-              ).toFixed(1),
-            )
-          : 0,
-    }));
-
-    // ── Formatear combos y fusionar en data ───────────────────────────────
-    const formattedCombos = finalCombos.map((combo) => ({
-      id: combo.id.toString(),
-      type: 'combo',
-      name: combo.name,
-      description: combo.description,
-      image_build: this.formatBuildImageUrl(combo.image_build),
-      total_price: combo.total_price,
-      total_price_soles: dollarRate > 0
-        ? parseFloat((combo.total_price * dollarRate).toFixed(2))
-        : null,
-      created_at: combo.created_at,
-      updated_at: combo.updated_at,
-      items: combo.build_detail_pc_tabla.map((detail) => ({
-        quantity: detail.quantity,
-        article_id: detail.articles.id.toString(),
-        cod_fab: detail.articles.cod_fab,
-        description: detail.articles.description,
-        public_price: detail.articles.public_price
-          ? parseFloat(detail.articles.public_price.toString())
-          : null,
-        public_price_soles: detail.articles.public_price
-          ? parseFloat(
-              (
-                detail.articles.currency_type_id?.toString() === '1'
-                  ? parseFloat(detail.articles.public_price.toString())
-                  : parseFloat(detail.articles.public_price.toString()) * dollarRate
-              ).toFixed(2),
-            )
-          : null,
-        public_price_dolares: detail.articles.public_price
-          ? parseFloat(
-              (
-                detail.articles.currency_type_id?.toString() === '2'
-                  ? parseFloat(detail.articles.public_price.toString())
-                  : dollarRate > 0 ? parseFloat(detail.articles.public_price.toString()) / dollarRate : 0
-              ).toFixed(2),
-            )
-          : null,
-        category: detail.articles.categories
-          ? {
-              id: detail.articles.categories.id.toString(),
-              name: detail.articles.categories.name,
-            }
-          : null,
-        brand: detail.articles.brands
-          ? {
-              id: detail.articles.brands.id.toString(),
-              name: detail.articles.brands.name,
-            }
-          : null,
-        article_images: detail.articles.article_images.map(img => ({
-          id: img.id.toString(),
-          url: this.formatImageUrl(img.url),
-          position: img.position,
-          is_main: img.is_main,
-        })),
-      })),
-    }));
-
-    // Los combos se mezclan dentro de data para que el frontend los reciba en un solo array
     const dataWithCombos = [...data, ...formattedCombos];
 
     return {
@@ -480,10 +291,8 @@ has_offer: article.has_offer ? 1 : 0,
       },
     });
  
-    const exchangeRate = await this.prisma.exchange_rates.findFirst({
-      orderBy: { date: 'desc' },
-    });
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = await this.getDollarRate();
+    const baseUrl = this.configService.get('APP_URL') || 'http://192.168.18.26:3000';
 
     if (article) {
       let subCategory: any = null;
@@ -493,95 +302,7 @@ has_offer: article.has_offer ? 1 : 0,
         });
       }
 
-      return {
-        type: 'article' as const,
-        name: article.description,
-        ...article,
-        id: article.id.toString(),
-        measurement_unit_id: article.measurement_unit_id?.toString(),
-        brand_id: article.brand_id?.toString(),
-        category_id: article.category_id?.toString(),
-        sub_category_id: article.sub_category_id?.toString(),
-        currency_type_id: article.currency_type_id?.toString(),
-        company_type_id: article.company_type_id?.toString(),
-        user_id: article.user_id?.toString(),
-        last_supplier: article.last_supplier?.toString(),
-        last_entry_guide: article.last_entry_guide?.toString(),
-        article_type_id: article.article_type_id?.toString(),
-        precio_public_soles: article.public_price
-  ? Number(
-      (
-        article.currency_type_id?.toString() === '1'
-          ? Number(article.public_price)
-          : Number(article.public_price) * Number(dollarRate)
-      ).toFixed(2)
-    )
-  : null,
-
-precio_public_dolares: article.public_price
-  ? Number(
-      (
-        article.currency_type_id?.toString() === '2'
-          ? Number(article.public_price)
-          : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
-      ).toFixed(2)
-    )
-  : null,
-
-precio_porcentaje: article.public_price
-  ? Number(
-      (
-        (
-          article.currency_type_id?.toString() === '1'
-            ? Number(article.public_price)
-            : Number(article.public_price) * Number(dollarRate)
-        ) *
-        (
-          1 - Number(article.offer_price_percent || 0) / 100
-        )
-      ).toFixed(2)
-    )
-  : null,
-
-precio_porcentaje_dolares: article.public_price
-  ? Number(
-      (
-        (
-          article.currency_type_id?.toString() === '2'
-            ? Number(article.public_price)
-            : Number(dollarRate) > 0 ? Number(article.public_price) / Number(dollarRate) : 0
-        ) *
-        (
-          1 - Number(article.offer_price_percent || 0) / 100
-        )
-      ).toFixed(2)
-    )
-  : null,
-
-is_new_for_web: article.is_new_for_web ? 1 : 0,
-
-has_offer: article.has_offer ? 1 : 0,
-
-        offer_price_percent: article.offer_price_percent ? Number(article.offer_price_percent) : 0,
-        categories: article.categories ? { ...article.categories, id: article.categories.id.toString() } : null,
-        brands: article.brands ? { ...article.brands, id: article.brands.id.toString() } : null,
-        sub_categories: subCategory ? { ...subCategory, id: subCategory.id.toString() } : null,
-        public_price: article.public_price ? parseFloat(article.public_price.toString()) : null,
-        purchase_price: article.purchase_price ? parseFloat(article.purchase_price.toString()) : null,
-        distributor_price: article.distributor_price ? parseFloat(article.distributor_price.toString()) : null,
-        authorized_price: article.authorized_price ? parseFloat(article.authorized_price.toString()) : null,
-        article_images: article.article_images,
-        total_reviews: article.reviews.length,
-        average_rating:
-          article.reviews.length > 0
-            ? parseFloat(
-              (
-                article.reviews.reduce((sum, r) => sum + r.rating, 0) /
-                article.reviews.length
-              ).toFixed(1),
-            )
-            : 0,
-      };
+      return ArticleMapper.toArticleResponse(article, dollarRate, baseUrl, 'article', subCategory);
     }
 
     // Si no es artículo, buscar en combos
@@ -605,65 +326,7 @@ has_offer: article.has_offer ? 1 : 0,
     });
 
     if (combo) {
-      return {
-        id: combo.id.toString(),
-        type: 'combo' as const,
-        name: combo.name,
-        description: combo.description,
-        total_price: combo.total_price,
-        total_price_soles: dollarRate > 0
-          ? parseFloat((combo.total_price * dollarRate).toFixed(2))
-          : null,
-        image_build: this.formatBuildImageUrl(combo.image_build),
-        created_at: combo.created_at,
-        updated_at: combo.updated_at,
-        items: combo.build_detail_pc_tabla.map((detail) => ({
-          quantity: detail.quantity,
-          article_id: detail.articles.id.toString(),
-          cod_fab: detail.articles.cod_fab,
-          description: detail.articles.description,
-          name: detail.articles.description,
-          public_price: detail.articles.public_price
-            ? parseFloat(detail.articles.public_price.toString())
-            : null,
-          public_price_soles: detail.articles.public_price
-            ? parseFloat(
-                (
-                  detail.articles.currency_type_id?.toString() === '1'
-                    ? parseFloat(detail.articles.public_price.toString())
-                    : parseFloat(detail.articles.public_price.toString()) * dollarRate
-                ).toFixed(2),
-              )
-            : null,
-          public_price_dolares: detail.articles.public_price
-            ? parseFloat(
-                (
-                  detail.articles.currency_type_id?.toString() === '2'
-                    ? parseFloat(detail.articles.public_price.toString())
-                    : dollarRate > 0 ? parseFloat(detail.articles.public_price.toString()) / dollarRate : 0
-                ).toFixed(2),
-              )
-            : null,
-          category: detail.articles.categories
-            ? {
-              id: detail.articles.categories.id.toString(),
-              name: detail.articles.categories.name,
-            }
-            : null,
-          brand: detail.articles.brands
-            ? {
-              id: detail.articles.brands.id.toString(),
-              name: detail.articles.brands.name,
-            }
-            : null,
-          article_images: detail.articles.article_images.map(img => ({
-            id: img.id.toString(),
-            url: this.formatImageUrl(img.url),
-            position: img.position,
-            is_main: img.is_main,
-          })),
-        })),
-      };
+      return ArticleMapper.toComboResponse(combo, dollarRate, baseUrl);
     }
     return null;
   }
@@ -688,25 +351,54 @@ has_offer: article.has_offer ? 1 : 0,
       data: { image_build: imageUrl },
     });
 
+    const baseUrl = this.configService.get('APP_URL') || 'http://192.168.18.26:3000';
+
     return {
       ...updatedBuild,
       id: updatedBuild.id.toString(),
       company_id: updatedBuild.company_id.toString(),
-      image_build: this.formatBuildImageUrl(updatedBuild.image_build),
+      image_build: ArticleMapper.formatImageUrl(updatedBuild.image_build, baseUrl),
     };
   }
 
-  private formatImageUrl(url: string | null): string | null {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
+  async findBySlug(slug: string) {
+    const id = slug.split('-').pop();
 
+    if (!id || isNaN(Number(id))) {
+      throw new NotFoundException('Slug inválido');
+    }
+
+    const producto = await this.prisma.articles.findUnique({
+      where: {
+        id: BigInt(id),
+      },
+      include: {
+        categories: true,
+        brands: true,
+        article_images: true,
+        reviews: {
+          where: { status: 1 },
+          select: { rating: true },
+        },
+      },
+    });
+
+    if (!producto) {
+      throw new NotFoundException('Producto no encontrado');
+    }
+
+    const dollarRate = await this.getDollarRate();
     const baseUrl = this.configService.get('APP_URL') || 'http://192.168.18.26:3000';
-    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
+    return ArticleMapper.toArticleResponse(producto, dollarRate, baseUrl, 'article');
   }
 
-  private formatBuildImageUrl(url: string | null): string | null {
-    return this.formatImageUrl(url);
+  private async getDollarRate(): Promise<number> {
+    const exchangeRate = await this.prisma.exchange_rates.findFirst({
+      orderBy: {
+        date: 'desc',
+      },
+    });
+    return exchangeRate ? Number(exchangeRate.sale_rate) : 0;
   }
-
-  
 }

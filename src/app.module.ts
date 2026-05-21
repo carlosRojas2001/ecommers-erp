@@ -12,6 +12,7 @@ import { ArticleImageModule } from './article_images/article_image.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { OrdersModule } from './orders/orders.module';
 import { HeroSliderModule } from './hero-slider/hero-slider.module';
+import { ChatbootModule } from './chatboot/chatboot.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { HeroSliderModule } from './hero-slider/hero-slider.module';
     ReviewsModule,
     OrdersModule,
     HeroSliderModule,
+    ChatbootModule,
   ],
   controllers: [],
   providers: [],

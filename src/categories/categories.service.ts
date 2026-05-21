@@ -9,7 +9,7 @@ export class CategoriesService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   private formatImageUrl(url: string | null): string | null {
     if (!url) return null;
@@ -112,7 +112,7 @@ export class CategoriesService {
   async findAll(params: { search?: string }) {
     const { search } = params;
 
-    const where: any = { 
+    const where: any = {
       status: 1,
       articles: { some: { status: 1, venta: true } }
     };
@@ -125,7 +125,7 @@ export class CategoriesService {
       where,
       include: {
         sub_categories: {
-          where: { 
+          where: {
             status: 1,
             articles: { some: { status: 1, venta: true } }
           },
@@ -155,7 +155,7 @@ export class CategoriesService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { 
+    const where: any = {
       status: 1,
       articles: { some: { status: 1, venta: true } }
     };
@@ -169,7 +169,7 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: { 
+            where: {
               status: 1,
               articles: { some: { status: 1, venta: true } }
             },
@@ -211,7 +211,7 @@ export class CategoriesService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    const where: any = { 
+    const where: any = {
       status: 1,
       articles: { some: { status: 1, venta: true } }
     };
@@ -225,7 +225,7 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: { 
+            where: {
               status: 1,
               articles: { some: { status: 1, venta: true } }
             },

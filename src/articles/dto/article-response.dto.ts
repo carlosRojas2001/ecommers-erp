@@ -24,7 +24,7 @@ export class ArticleImageResponseDto {
   @Expose()
   @Transform(({ value }) => {
     if (!value) return null;
-    const baseUrl = process.env.APP_URL || 'http://192.168.18.26:3001';
+    const baseUrl = process.env.APP_URL || 'http://192.168.18.26:3000';
     if (value.startsWith('http')) {
       return value.replace(/http:\/\/localhost:\d+/g, baseUrl);
     }
@@ -40,24 +40,19 @@ export class ArticleResponseDto {
   @Expose() type: string;
   @Expose() id: number;
   @Expose() description: string;
+  
   @Expose()
-  @Transform(({ obj }) => obj.description)
+  @Transform(({ obj }) => obj.description || obj.name)
   name: string;
+  
   @Expose() cod_fab: string;
 
-  // @Expose()
-  // @Transform(({ value }) => { if (!value) return null; const baseUrl = process.env.APP_URL || 'http://192.168.18.26:3000'; if (value.startsWith('http')) { return value.replace(/http:\/\/localhost:\d+/g, baseUrl); } return `${baseUrl}${value.startsWith('/') ? '' : '/'}${value}`; })
-  // image_url: string;
+  @Expose()
+  @Transform(({ value }) => (value !== undefined && value !== null ? Number(value) : null))
+  public_price: number;
 
-@Expose()
-@Transform(({ value }) => {
-  if (value === undefined || value === null) {
-    return null;
-  }
-
-  return Number(value);
-})
-public_price: number;
+  @Expose()
+  slug: string;
 
   @Expose()
   @Transform(({ value }) => (value !== undefined && value !== null ? parseFloat(value) : 0))
@@ -108,14 +103,18 @@ public_price: number;
   precio_public_soles: number;
 
   @Expose()
+  precio_public_dolares: number;
+
+  @Expose()
   precio_porcentaje: number;
 
   @Expose()
-  // @Transform(({ value }) => value === true || value === 1 || value === '1')
+  precio_porcentaje_dolares: number;
+
+  @Expose()
   is_new_for_web: number;
 
   @Expose()
-  // @Transform(({ value }) => value === true || value === 1 || value === '1')
   has_offer: number;
 
   @Expose()
@@ -124,6 +123,3 @@ public_price: number;
   @Expose()
   items: any[];
 }
-
-
- 
