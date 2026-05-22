@@ -54,13 +54,9 @@ export class ArticleImageService {
       createArticleImageDto.position === null ||
       createArticleImageDto.position === 0
         ? autoPosition
-        : Number(createArticleImageDto.position);
+        : Number(createArticleImageDto.position); 
 
-    console.log(
-      `Calculando posición para artículo ${articleId}: LastPos=${lastImage?.position}, AutoPos=${autoPosition}, FinalPos=${finalPosition}`,
-    );
-
-    // 2. Si esta imagen se marca como principal, desactivar 'is_main' en las otras
+    // 2. Si esta imagen se marca como principal, desactivar 'is_main' en las otras 
     const shouldBeMain = is_main ?? autoPosition === 0;
     if (shouldBeMain) {
       await this.prisma.article_images.updateMany({

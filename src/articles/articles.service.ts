@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import slugify from 'slugify';
 
 @Injectable()
 export class ArticlesService {
@@ -377,7 +378,6 @@ has_offer: article.has_offer ? 1 : 0,
       purchase_price: article.purchase_price ? parseFloat(article.purchase_price.toString()) : null,
       distributor_price: article.distributor_price ? parseFloat(article.distributor_price.toString()) : null,
       authorized_price: article.authorized_price ? parseFloat(article.authorized_price.toString()) : null,
-      article_images: article.article_images,
       total_reviews: article.reviews.length,
       name: article.description,
       average_rating:
@@ -396,6 +396,7 @@ has_offer: article.has_offer ? 1 : 0,
       id: combo.id.toString(),
       type: 'combo',
       name: combo.name,
+      slug: combo.slug,
       description: combo.description,
       image_build: this.formatBuildImageUrl(combo.image_build),
       total_price: combo.total_price,
@@ -463,6 +464,103 @@ has_offer: article.has_offer ? 1 : 0,
         totalPages: Math.ceil(total / limit),
         applied_filters: appliedFilters.length > 0 ? appliedFilters : undefined,
       },
+    };
+  }
+
+  async findBySlug(slug: string) {
+    const article = await this.prisma.articles.findFirst({
+      where: { slug, status: 1, venta: true },
+      include: {
+        categories: true,
+        brands: true,
+        article_images: true,
+        reviews: { where: { status: 1 }, select: { rating: true } },
+      },
+    });
+
+    if (!article) throw new NotFoundException(`Artículo con slug "${slug}" no encontrado`);
+    const matched = article;
+
+    const exchangeRate = await this.prisma.exchange_rates.findFirst({
+      orderBy: { date: 'desc' },
+    });
+    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+
+    let subCategory: any = null;
+    if (matched.sub_category_id) {
+      subCategory = await this.prisma.sub_categories.findUnique({
+        where: { id: matched.sub_category_id },
+      });
+    }
+
+    return {
+      type: 'article' as const,
+      name: matched.description,
+        ...matched,
+      id: matched.id.toString(),
+      measurement_unit_id: matched.measurement_unit_id?.toString(),
+      brand_id: matched.brand_id?.toString(),
+      category_id: matched.category_id?.toString(),
+      sub_category_id: matched.sub_category_id?.toString(),
+      currency_type_id: matched.currency_type_id?.toString(),
+      company_type_id: matched.company_type_id?.toString(),
+      user_id: matched.user_id?.toString(),
+      last_supplier: matched.last_supplier?.toString(),
+      last_entry_guide: matched.last_entry_guide?.toString(),
+      article_type_id: matched.article_type_id?.toString(),
+      precio_public_soles: matched.public_price
+        ? Number(
+            (matched.currency_type_id?.toString() === '1'
+              ? Number(matched.public_price)
+              : Number(matched.public_price) * Number(dollarRate)
+            ).toFixed(2),
+          )
+        : null,
+      precio_public_dolares: matched.public_price
+        ? Number(
+            (matched.currency_type_id?.toString() === '2'
+              ? Number(matched.public_price)
+              : dollarRate > 0
+                ? Number(matched.public_price) / Number(dollarRate)
+                : 0
+            ).toFixed(2),
+          )
+        : null,
+      precio_porcentaje: matched.public_price
+        ? Number(
+            ((matched.currency_type_id?.toString() === '1'
+              ? Number(matched.public_price)
+              : Number(matched.public_price) * Number(dollarRate)
+            ) * (1 - Number(matched.offer_price_percent || 0) / 100)).toFixed(2),
+          )
+        : null,
+      precio_porcentaje_dolares: matched.public_price
+        ? Number(
+            ((matched.currency_type_id?.toString() === '2'
+              ? Number(matched.public_price)
+              : dollarRate > 0
+                ? Number(matched.public_price) / Number(dollarRate)
+                : 0
+            ) * (1 - Number(matched.offer_price_percent || 0) / 100)).toFixed(2),
+          )
+        : null,
+      is_new_for_web: matched.is_new_for_web ? 1 : 0,
+      has_offer: matched.has_offer ? 1 : 0,
+      offer_price_percent: matched.offer_price_percent ? Number(matched.offer_price_percent) : 0,
+      categories: matched.categories ? { ...matched.categories, id: matched.categories.id.toString() } : null,
+      brands: matched.brands ? { ...matched.brands, id: matched.brands.id.toString() } : null,
+      sub_categories: subCategory ? { ...subCategory, id: subCategory.id.toString() } : null,
+      public_price: matched.public_price ? parseFloat(matched.public_price.toString()) : null,
+      purchase_price: matched.purchase_price ? parseFloat(matched.purchase_price.toString()) : null,
+      distributor_price: matched.distributor_price ? parseFloat(matched.distributor_price.toString()) : null,
+      authorized_price: matched.authorized_price ? parseFloat(matched.authorized_price.toString()) : null,
+      total_reviews: matched.reviews.length,
+      average_rating:
+        matched.reviews.length > 0
+          ? parseFloat(
+              (matched.reviews.reduce((sum, r) => sum + r.rating, 0) / matched.reviews.length).toFixed(1),
+            )
+          : 0,
     };
   }
 
@@ -570,7 +668,6 @@ has_offer: article.has_offer ? 1 : 0,
         purchase_price: article.purchase_price ? parseFloat(article.purchase_price.toString()) : null,
         distributor_price: article.distributor_price ? parseFloat(article.distributor_price.toString()) : null,
         authorized_price: article.authorized_price ? parseFloat(article.authorized_price.toString()) : null,
-        article_images: article.article_images,
         total_reviews: article.reviews.length,
         average_rating:
           article.reviews.length > 0
@@ -609,8 +706,9 @@ has_offer: article.has_offer ? 1 : 0,
         id: combo.id.toString(),
         type: 'combo' as const,
         name: combo.name,
-        description: combo.description,
-        total_price: combo.total_price,
+      slug: combo.slug,
+      description: combo.description,
+      total_price: combo.total_price,
         total_price_soles: dollarRate > 0
           ? parseFloat((combo.total_price * dollarRate).toFixed(2))
           : null,
@@ -622,6 +720,7 @@ has_offer: article.has_offer ? 1 : 0,
           article_id: detail.articles.id.toString(),
           cod_fab: detail.articles.cod_fab,
           description: detail.articles.description,
+          slug: detail.articles.slug,
           name: detail.articles.description,
           public_price: detail.articles.public_price
             ? parseFloat(detail.articles.public_price.toString())
@@ -694,6 +793,43 @@ has_offer: article.has_offer ? 1 : 0,
       company_id: updatedBuild.company_id.toString(),
       image_build: this.formatBuildImageUrl(updatedBuild.image_build),
     };
+  }
+
+  async regenerateSlugs() {
+    const articles = await this.prisma.articles.findMany({
+      where: { slug: null, description: { not: null } },
+      select: { id: true, description: true },
+    });
+
+    let updated = 0;
+    for (const article of articles) {
+      const slug = this.generateArticleSlug(article.description!, Number(article.id));
+      await this.prisma.articles.update({
+        where: { id: article.id },
+        data: { slug },
+      });
+      updated++;
+    }
+
+    return { message: `Slugs generados para ${updated} artículos` };
+  }
+
+  static generateArticleSlug(description: string, id: number): string {
+    const base = description
+      .toLowerCase()
+      .replace(/\|/g, ' ')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const truncated = base.length <= 50
+      ? base
+      : base.slice(0, 50).replace(/-[^-]*$/, '');
+
+    return `${truncated}-${id}`;
+  }
+
+  private generateArticleSlug(description: string, id: number): string {
+    return ArticlesService.generateArticleSlug(description, id);
   }
 
   private formatImageUrl(url: string | null): string | null {

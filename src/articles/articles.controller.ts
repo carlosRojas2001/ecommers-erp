@@ -66,6 +66,17 @@ export class ArticlesController {
   }
 
   @Serialize(ArticleResponseDto)
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.articlesService.findBySlug(slug);
+  }
+
+  @Post('regenerate-slugs')
+  regenerateSlugs() {
+    return this.articlesService.regenerateSlugs();
+  }
+
+  @Serialize(ArticleResponseDto)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.articlesService.findOne(+id);

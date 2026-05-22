@@ -41,7 +41,6 @@ export class FavoritesService {
   //   ON articles.id = build_detail_pc_tabla.article_id
   // WHERE build_pc_tabla.id = ${articleId}`;
   //   // const re =  respuesta.map(item=>item.article_id)
-  //  console.log(respuesta)
   //   //------------------------------------------------------// 
       const favorite = await this.prisma.favorites.create({
         data: {

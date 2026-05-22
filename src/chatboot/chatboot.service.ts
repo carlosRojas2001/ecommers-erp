@@ -154,7 +154,7 @@ Responde de manera concisa y clara.`
               content: userMessage
             }
           ]
-        });
+        }); 
         const respuesta = resp.choices[0].message.content || 'Hola, ¿en qué puedo ayudarte hoy?';
         return {
           message: respuesta,
@@ -380,127 +380,155 @@ Muestra: ${JSON.stringify(products.slice(0, 3))}`
       limit,
     } = params;
 
-    const where: any = {
-      status: 1, // Solo activos
-      venta: true, // Solo para venta
-    };
-
-    const synonymMap: Record<string, string[]> = {
-      laptop: ['notebook', 'laptop', 'portatil'],
-      laptops: ['notebook', 'laptop', 'portatil'],
-      notebook: ['laptop', 'notebook', 'portatil'],
-      notebooks: ['laptop', 'notebook', 'portatil'],
-      computadora: ['computador', 'desktop'],
-      computadoras: ['computador', 'desktop'],
-      celular: ['telefono', 'smartphone', 'movil'],
-      celulares: ['telefono', 'smartphone', 'movil'],
-    };
-
-    // Construcción del término de búsqueda y mapeo de sinónimos
-    if (search) {
-      const term = search.toLowerCase().trim();
-      const termsToSearch = Array.from(new Set([
-        term,
-        ...(synonymMap[term] || [])
-      ]));
-
-      where.AND = [
-        {
-          OR: termsToSearch.flatMap((t) => [
-            { description: { contains: t } },
-            { cod_fab: { contains: t } },
-            { categories: { name: { contains: t } } },
-            { brands: { name: { contains: t } } }
-          ])
-        }
-      ];
-    }
-
-    if (categoryId) {
-      where.category_id = BigInt(categoryId);
-    }
-    if (brandId) {
-      where.brand_id = BigInt(brandId);
-    }
-
-    if (minPrice || maxPrice) {
-      where.public_price = {
-        gte: minPrice ? Number(minPrice) : undefined,
-        lte: maxPrice ? Number(maxPrice) : undefined,
-      };
-    }
-    
-    if (inStock) {
-      where.min_stock = { gt: 0 };
-    }
-
-    if (nuevos) {
-      where.is_new_for_web = true;
-    }
-
-    if (ofertas) {
-      where.has_offer = true;
-    }
-
-    let orderBy: any = undefined;
-    if (sort === 'price_asc') {
-      orderBy = { public_price: 'asc' };
-    } else if (sort === 'price_desc') {
-      orderBy = { public_price: 'desc' };
-    } else if (sort === 'newest') {
-      orderBy = { id: 'desc' };
-    }
-
     const skip = (page - 1) * limit;
 
-    const [articles, total, exchangeRate] = await Promise.all([
-      this.prisma.articles.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: {
-          categories: true,
-          brands: true,
-          article_images: {
-            where: { is_main: true },
-            take: 1,
+    const synonymMap: Record<string, string[]> = {
+      laptop: ['notebook', 'laptop', 'portatil', 'laptops', 'notebooks'],
+      laptops: ['notebook', 'laptop', 'portatil', 'notebooks'],
+      notebook: ['laptop', 'notebook', 'portatil', 'notebooks'],
+      notebooks: ['laptop', 'notebook', 'portatil', 'notebooks'],
+      computadora: ['computador', 'desktop', 'computadoras'],
+      computadoras: ['computador', 'desktop', 'computadora'],
+      celular: ['telefono', 'smartphone', 'movil', 'celulares'],
+      celulares: ['telefono', 'smartphone', 'movil', 'celular'],
+      mouse: ['raton', 'ratón', 'mouses', 'ratones'],
+      mouses: ['mouse', 'raton', 'ratón', 'ratones'],
+      raton: ['mouse', 'mouses', 'ratón', 'ratones'],
+      ratón: ['mouse', 'mouses', 'raton', 'ratones'],
+      teclado: ['teclado', 'keyboard', 'teclados'],
+      monitor: ['monitor', 'pantalla', 'display', 'monitores'],
+      audifonos: ['audifonos', 'auriculares', 'headset', 'audífonos'],
+      audífonos: ['audifonos', 'auriculares', 'headset'],
+    };
+
+    const buildBaseWhere = () => {
+      const w: any = { status: 1, venta: true };
+      if (categoryId) w.category_id = BigInt(categoryId);
+      if (brandId) w.brand_id = BigInt(brandId);
+      if (minPrice || maxPrice) {
+        w.public_price = {
+          gte: minPrice ? Number(minPrice) : undefined,
+          lte: maxPrice ? Number(maxPrice) : undefined,
+        };
+      }
+      if (inStock) w.min_stock = { gt: 0 };
+      if (nuevos) w.is_new_for_web = true;
+      if (ofertas) w.has_offer = true;
+      return w;
+    };
+
+    const buildOrderBy = () => {
+      if (sort === 'price_asc') return { public_price: 'asc' as const };
+      if (sort === 'price_desc') return { public_price: 'desc' as const };
+      if (sort === 'newest') return { id: 'desc' as const };
+      return undefined;
+    };
+
+    const execQuery = async (whereClause: any) => {
+      const [articles, total, exchangeRate] = await Promise.all([
+        this.prisma.articles.findMany({
+          where: whereClause,
+          skip,
+          take: limit,
+          orderBy: buildOrderBy(),
+          include: {
+            categories: true,
+            brands: true,
+            article_images: { where: { is_main: true }, take: 1 },
           },
-        },
-      }),
-      this.prisma.articles.count({ where }),
-      this.prisma.exchange_rates.findFirst({
-        orderBy: { date: 'desc' },
-      })
-    ]);
+        }),
+        this.prisma.articles.count({ where: whereClause }),
+        this.prisma.exchange_rates.findFirst({ orderBy: { date: 'desc' } }),
+      ]);
 
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+      const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
 
-    const formattedProducts = articles.map((article: any) => {
-      const id = Number(article.id);
-      const nombre = article.description || '';
-      const mainImageObj = article.article_images?.[0];
-      const rawImgUrl = mainImageObj ? mainImageObj.url : (article.image_url || null);
+      const formattedProducts = articles.map((article: any) => {
+        const id = Number(article.id);
+        const nombre = article.description || '';
+        const mainImageObj = article.article_images?.[0];
+        const rawImgUrl = mainImageObj ? mainImageObj.url : (article.image_url || null);
+        const rawPrice = article.public_price ? Number(article.public_price) : 0;
+        const isDollars = article.currency_type_id?.toString() === '2';
+        const precioSoles = isDollars && dollarRate > 0
+          ? Number((rawPrice * dollarRate).toFixed(2))
+          : Number(rawPrice.toFixed(2));
 
-      // Conversión a Soles
-      const rawPrice = article.public_price ? Number(article.public_price) : 0;
-      const isDollars = article.currency_type_id?.toString() === '2';
-      const precioSoles = isDollars && dollarRate > 0
-        ? Number((rawPrice * dollarRate).toFixed(2))
-        : Number(rawPrice.toFixed(2));
+        return {
+          id,
+          nombre,
+          precio: precioSoles,
+          imagen: this.formatImageUrl(rawImgUrl),
+          marca: article.brands?.name || null,
+          categoria: article.categories?.name || null,
+          ruta: this.formatProductRoute(id),
+        };
+      });
 
-      return {
-        id,
-        nombre,
-        precio: precioSoles,
-        imagen: this.formatImageUrl(rawImgUrl),
-        marca: article.brands?.name || null,
-        categoria: article.categories?.name || null,
-        ruta: this.formatProductRoute(id),
-      };
-    });
+      return { products: formattedProducts, total };
+    };
 
-    return { products: formattedProducts, total };
+    // ── Primer intento: búsqueda directa ──
+    const term = search?.toLowerCase().trim() || '';
+    const termsToSearch = term
+      ? Array.from(new Set([
+          term,
+          ...(synonymMap[term] || []),
+          ...(term.endsWith('s') && term.length > 3 ? [term.slice(0, -1)] : []),
+          ...(!term.endsWith('s') ? [term + 's'] : []),
+        ]))
+      : [];
+
+    const where = buildBaseWhere();
+
+    if (term && termsToSearch.length > 0) {
+      where.AND = [{
+        OR: termsToSearch.flatMap((t) => [
+          { description: { contains: t } },
+          { cod_fab: { contains: t } },
+          { categories: { name: { contains: t } } },
+          { brands: { name: { contains: t } } },
+        ]),
+      }];
+    }
+
+    let result = await execQuery(where);
+
+    // ── Fallback por taxonomía si no hay resultados ──
+    if (result.total === 0 && term && !categoryId && !brandId) {
+      const [matchedCategories, matchedBrands, matchedSubCategories] = await Promise.all([
+        this.prisma.categories.findMany({
+          where: { status: 1, OR: termsToSearch.map((t) => ({ name: { contains: t } })) },
+          select: { id: true },
+        }),
+        this.prisma.brands.findMany({
+          where: { status: 1, OR: termsToSearch.map((t) => ({ name: { contains: t } })) },
+          select: { id: true },
+        }),
+        this.prisma.sub_categories.findMany({
+          where: { status: 1, OR: termsToSearch.map((t) => ({ name: { contains: t } })) },
+          select: { id: true },
+        }),
+      ]);
+
+      const categoryIds = matchedCategories.map((c) => BigInt(c.id));
+      const brandIds = matchedBrands.map((b) => BigInt(b.id));
+      const subCategoryIds = matchedSubCategories.map((s) => BigInt(s.id));
+
+      if (categoryIds.length > 0 || brandIds.length > 0 || subCategoryIds.length > 0) {
+        const fallbackWhere = buildBaseWhere();
+        fallbackWhere.AND = [{
+          OR: [
+            ...(categoryIds.length > 0 ? [{ category_id: { in: categoryIds } }] : []),
+            ...(brandIds.length > 0 ? [{ brand_id: { in: brandIds } }] : []),
+            ...(subCategoryIds.length > 0 ? [{ sub_category_id: { in: subCategoryIds } }] : []),
+          ],
+        }];
+        result = await execQuery(fallbackWhere);
+      }
+    }
+
+    return result;
   }
 
   /**

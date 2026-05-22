@@ -66,11 +66,7 @@ export class AuthService {
             },
           },
         ),
-      );
-  console.log(
-    'RESPUESTA GOOGLE:',
-    response.data
-  );
+      ); 
 
     if (!response.data.success) {
       throw new BadRequestException(
@@ -140,10 +136,6 @@ export class AuthService {
           },
         ),
       );
-  console.log(
-    'RESPUESTA GOOGLE:',
-    response.data
-  );
 
     if (!response.data.success) {
       throw new BadRequestException(
@@ -198,7 +190,7 @@ export class AuthService {
 
     // 2. Find existing client or auto-create on first login
     let client = await this.clientsService.findByEmail(email);
-    console.log(client);
+
     if (!client) {
       client = await this.clientsService.createFromGoogle({
         name,
@@ -206,8 +198,7 @@ export class AuthService {
         googleId,
       });
     }
-    console.log(client);
-    // 3. Issue JWT
+    // 3. Issue JWT 
     return this.generateAuthResponse(client);
   }
 
