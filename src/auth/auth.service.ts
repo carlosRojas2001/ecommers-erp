@@ -15,6 +15,8 @@ import { UpdateClientDto } from '../clients/dto/update-client.dto';
 import { randomBytes } from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -31,17 +33,71 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly httpService: HttpService
   ) { }
 
   // ─── Registro de Clientes ──────────────────────────────────────────────────
   async register(dto: RegisterDto) {
+    
     const existingClient = await this.clientsService.findByEmail(dto.email);
     if (existingClient) {
       throw new ConflictException('El correo ya está registrado');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const client = await this.clientsService.create({
+    if (!dto.captchaToken) {
+    throw new BadRequestException(
+      'Captcha requerido'
+    );
+  }
+
+  const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+
+     try {
+
+    const response =
+      await firstValueFrom(
+        this.httpService.post(
+          'https://www.google.com/recaptcha/api/siteverify',
+          null,
+          {
+            params: {
+              secret,
+              response: dto.captchaToken,
+            },
+          },
+        ),
+      );
+  console.log(
+    'RESPUESTA GOOGLE:',
+    response.data
+  );
+
+    if (!response.data.success) {
+      throw new BadRequestException(
+        'Captcha inválido'
+      );
+    }
+
+  } catch (error) {
+
+  if (error instanceof BadRequestException) {
+    throw error;
+  }
+
+  throw new BadRequestException(
+    'Error verificando captcha'
+  );
+}
+
+  // Continúa registro normal
+  const hashedPassword =
+    await bcrypt.hash(
+      dto.password,
+      10,
+    );
+
+  const client =
+    await this.clientsService.create({
       names: dto.names,
       lastnames: dto.lastnames,
       email: dto.email,
@@ -51,12 +107,61 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    return this.generateAuthResponse(client);
+  return this.generateAuthResponse(
+    client
+  );
+
   }
 
   // ─── Login Estándar (Clientes) ─────────────────────────────────────────────
   async login(dto: LoginDto) {
-    const client = await this.clientsService.findByEmail(dto.email);
+    const client = await this.clientsService.findByEmail(dto.email); 
+
+       if (!dto.captchaToken) {
+    throw new BadRequestException(
+      'Captcha requerido'
+    );
+  }
+   
+      const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+
+       try {
+
+    const response =
+      await firstValueFrom(
+        this.httpService.post(
+          'https://www.google.com/recaptcha/api/siteverify',
+          null,
+          {
+            params: {
+              secret,
+              response: dto.captchaToken,
+            },
+          },
+        ),
+      );
+  console.log(
+    'RESPUESTA GOOGLE:',
+    response.data
+  );
+
+    if (!response.data.success) {
+      throw new BadRequestException(
+        'Captcha inválido'
+      );
+    }
+
+  } catch (error) {
+
+  if (error instanceof BadRequestException) {
+    throw error;
+  }
+
+  throw new BadRequestException(
+    'Error verificando captcha'
+  );
+}
+
 
     if (!client || !client.password) {
       throw new UnauthorizedException('Email inválidas');
@@ -146,7 +251,7 @@ export class AuthService {
       throw new UnauthorizedException('No eres administrador');
     }
 
-    // 🔐 Generar JWT
+    //  Generar JWT
     const payload = {
       sub: user.id,
       username: user.username,
