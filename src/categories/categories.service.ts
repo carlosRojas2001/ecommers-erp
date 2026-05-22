@@ -24,6 +24,15 @@ export class CategoriesService {
     return `${baseUrl}${url}`;
   }
 
+  private async getValidSubCategoryIds(): Promise<bigint[]> {
+    const articles = await this.prisma.articles.findMany({
+      where: { status: 1, venta: true, sub_category_id: { not: null } },
+      select: { sub_category_id: true },
+    });
+    const ids = [...new Set(articles.map((a) => a.sub_category_id))];
+    return ids.filter(Boolean) as bigint[];
+  }
+
   async create(
     createCategoryDto: CreateCategoryDto,
     file?: Express.Multer.File,
@@ -111,10 +120,12 @@ export class CategoriesService {
 
   async findAll(params: { search?: string }) {
     const { search } = params;
+    const validSubIds = await this.getValidSubCategoryIds();
 
     const where: any = {
       status: 1,
-      articles: { some: { status: 1, venta: true } }
+      articles: { some: { status: 1, venta: true } },
+      sub_categories: { some: { id: { in: validSubIds } } },
     };
 
     if (search) {
@@ -125,7 +136,10 @@ export class CategoriesService {
       where,
       include: {
         sub_categories: {
-          where: { status: 1 },
+          where: {
+            status: 1,
+            id: { in: validSubIds },
+          },
         },
       },
       orderBy: { name: 'asc' },
@@ -151,10 +165,12 @@ export class CategoriesService {
     const { page = 1, limit = 10, search } = params;
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
+    const validSubIds = await this.getValidSubCategoryIds();
 
     const where: any = {
       status: 1,
-      articles: { some: { status: 1, venta: true } }
+      articles: { some: { status: 1, venta: true } },
+      sub_categories: { some: { id: { in: validSubIds } } },
     };
 
     if (search) {
@@ -166,7 +182,10 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: { status: 1 },
+            where: {
+              status: 1,
+              id: { in: validSubIds },
+            },
           },
         },
         skip,
@@ -204,10 +223,12 @@ export class CategoriesService {
     const { page = 1, limit = 10, search } = params;
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
+    const validSubIds = await this.getValidSubCategoryIds();
 
     const where: any = {
       status: 1,
-      articles: { some: { status: 1, venta: true } }
+      articles: { some: { status: 1, venta: true } },
+      sub_categories: { some: { id: { in: validSubIds } } },
     };
 
     if (search) {
@@ -219,7 +240,10 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: { status: 1 },
+            where: {
+              status: 1,
+              id: { in: validSubIds },
+            },
           },
         },
         skip,
@@ -250,10 +274,12 @@ export class CategoriesService {
     };
   }
   async filterSubcategories(id: string) {
+    const validSubIds = await this.getValidSubCategoryIds();
     const subCategories = await this.prisma.sub_categories.findMany({
       where: {
         category_id: BigInt(id),
         status: 1,
+        id: { in: validSubIds },
       },
     });
     return subCategories.map((sub) => ({
