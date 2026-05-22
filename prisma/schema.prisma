@@ -61,7 +61,6 @@ model articles {
   id                                                                                  BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
   cod_fab                                                                             String?                      @db.VarChar(100)
   description                                                                         String?                      @db.VarChar(255)
-  slug                                                                                String?                      @unique(map: "articles_slug_unique") @db.VarChar(100)
   weight                                                                              Float                        @default(1)
   with_deduction                                                                      Boolean                      @default(false)
   series_enabled                                                                      Boolean                      @default(false)
@@ -102,10 +101,10 @@ model articles {
   is_new_for_web                                                                      Boolean?                     @default(false)
   has_offer                                                                           Boolean?                     @default(false)
   offer_price_percent                                                                 Decimal?                     @default(0) @db.Decimal(10, 0)
+  slug                                                                                String?                      @unique(map: "articles_slug_unique") @db.VarChar(100)
   article_images                                                                      article_images[]
   brands                                                                              brands?                      @relation(fields: [brand_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_brand_id_foreign")
   categories                                                                          categories?                  @relation(fields: [category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_category_id_foreign")
-  sub_categories                                                                      sub_categories?              @relation(fields: [sub_category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_sub_category_id_foreign")
   companies                                                                           companies?                   @relation(fields: [company_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_company_type_id_foreign")
   currency_types                                                                      currency_types?              @relation(fields: [currency_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_currency_type_id_foreign")
   measurement_units                                                                   measurement_units?           @relation(fields: [measurement_unit_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_measurement_unit_id_foreign")
@@ -135,7 +134,7 @@ model articles {
   @@index([measurement_unit_id], map: "articles_measurement_unit_id_foreign")
   @@index([sub_category_id], map: "articles_sub_category_id_foreign")
   @@index([user_id], map: "articles_user_id_foreign")
-}   
+}
 
 model banks {
   id                 BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
@@ -248,7 +247,7 @@ model build_pc_tabla {
   created_at            DateTime?               @db.Timestamp(0)
   updated_at            DateTime?               @db.Timestamp(0)
   image_build           String?                 @db.VarChar(255)
-  slug                  String?                 @unique(map: "build_pc_tabla_slug_unique") @db.VarChar(100)
+  slug                  String?                 @unique(map: "build_pc_tabla_slug_unique") @db.VarChar(50)
   build_detail_pc_tabla build_detail_pc_tabla[]
   companies             companies               @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "build_pc_tabla_company_id_foreign")
 
@@ -2443,7 +2442,6 @@ model sub_categories {
   updated_at  DateTime?  @db.Timestamp(0)
   image_url   String?    @db.VarChar(255)
   categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign")
-  articles    articles[]
 
   @@index([category_id], map: "sub_categories_category_id_foreign")
 }

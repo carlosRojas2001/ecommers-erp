@@ -125,10 +125,7 @@ export class CategoriesService {
       where,
       include: {
         sub_categories: {
-          where: {
-            status: 1,
-            articles: { some: { status: 1, venta: true } }
-          },
+          where: { status: 1 },
         },
       },
       orderBy: { name: 'asc' },
@@ -169,10 +166,7 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: {
-              status: 1,
-              articles: { some: { status: 1, venta: true } }
-            },
+            where: { status: 1 },
           },
         },
         skip,
@@ -225,10 +219,7 @@ export class CategoriesService {
         where,
         include: {
           sub_categories: {
-            where: {
-              status: 1,
-              articles: { some: { status: 1, venta: true } }
-            },
+            where: { status: 1 },
           },
         },
         skip,
@@ -263,7 +254,6 @@ export class CategoriesService {
       where: {
         category_id: BigInt(id),
         status: 1,
-        articles: { some: { status: 1, venta: true } },
       },
     });
     return subCategories.map((sub) => ({
