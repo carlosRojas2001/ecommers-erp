@@ -26,7 +26,7 @@ export class RegisterDto {
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password!: string;
 
-  // @IsString()
-  // captchaToken!: string;
+  @IsString()
+  captchaToken!: string;
  }
 

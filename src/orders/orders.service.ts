@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import PDFDocument from 'pdfkit';
@@ -38,6 +38,9 @@ export class OrdersService {
         clients:true,
       }
     });
+      console.log(orders?.clients?.document_number)
+
+      if (orders?.clients?.document_number == "") throw new UnauthorizedException('Debes tener registro de dni')
       
     const item_irderns = await Promise.all(
       createOrderDto.items.map(async (item: any) => {
