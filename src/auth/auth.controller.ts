@@ -31,7 +31,7 @@ export class AuthController {
   ) {
     const { token, user } = await this.authService.register(body);
     this.setCookie(response, token);
-    return { user, token };
+    return { user, token, sunat_verfied:false };
   }
 
   @Post('login')

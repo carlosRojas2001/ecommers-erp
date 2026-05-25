@@ -294,6 +294,7 @@ model clients {
   role                String      @default("client") @db.VarChar(20)
   reset_token         String?     @db.VarChar(255)
   reset_token_expires DateTime?   @db.Timestamp(0)
+  address             String?     @db.VarChar(200)
   favorites           favorites[]
   orders              orders[]
   reviews             reviews[]

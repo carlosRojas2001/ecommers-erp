@@ -2,13 +2,13 @@ import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
-  names: string;
+  names!: string;
 
   @IsString()
-  lastnames: string;
+  lastnames!: string;
 
   @IsEmail({}, { message: 'El correo electrónico no es válido' })
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsString()
@@ -24,9 +24,9 @@ export class RegisterDto {
 
   @IsString()
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
-  password: string;
+  password!: string;
 
-  @IsString()
-  captchaToken: string;
-}
+  // @IsString()
+  // captchaToken!: string;
+ }
 

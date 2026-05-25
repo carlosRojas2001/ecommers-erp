@@ -6,13 +6,25 @@ import {
   Query,
   Patch,
   Body,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('clientes')
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
+
+  @Patch('sunat')
+  @UseGuards(AuthGuard('jwt'))
+  consulltaConSunat(
+  @Request() req: any,
+  @Body() query:any){
+
+    return this.clientsService.consultaEditarClientSunat(req?.user,query)
+  }
 
   @Get('by-google-id/:googleId')
   findByGoogleId(@Param('googleId') googleId: string) {
@@ -36,4 +48,6 @@ export class ClientsController {
   update(@Param('id') id: string, @Body() dto: UpdateClientDto) {
     return this.clientsService.update(+id, dto);
   }
+  
+
 }
