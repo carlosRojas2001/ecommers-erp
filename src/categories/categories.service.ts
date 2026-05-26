@@ -125,7 +125,7 @@ export class CategoriesService {
     const where: any = {
       status: 1,
       articles: { some: { status: 1, venta: true } },
-      sub_categories: { some: { id: { in: validSubIds } } },
+      // sub_categories: { some: { id: { in: validSubIds } } },
     };
 
     if (search) {
@@ -170,7 +170,7 @@ export class CategoriesService {
     const where: any = {
       status: 1,
       articles: { some: { status: 1, venta: true } },
-      sub_categories: { some: { id: { in: validSubIds } } },
+      // sub_categories: { some: { id: { in: validSubIds } } },
     };
 
     if (search) {
@@ -282,6 +282,7 @@ export class CategoriesService {
         id: { in: validSubIds },
       },
     });
+     console.log(id)
     return subCategories.map((sub) => ({
       ...sub,
       id: sub.id.toString(),
