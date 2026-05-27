@@ -108,6 +108,7 @@ model articles {
   companies                                                                           companies?                   @relation(fields: [company_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_company_type_id_foreign")
   currency_types                                                                      currency_types?              @relation(fields: [currency_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_currency_type_id_foreign")
   measurement_units                                                                   measurement_units?           @relation(fields: [measurement_unit_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_measurement_unit_id_foreign")
+  sub_categories                                                                      sub_categories?              @relation(fields: [sub_category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_sub_category_id_foreign")
   users                                                                               users?                       @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_user_id_foreign")
   build_detail_pc_tabla                                                               build_detail_pc_tabla[]
   detail_pc_compatible_tabla_detail_pc_compatible_tabla_article_accesory_idToarticles detail_pc_compatible_tabla[] @relation("detail_pc_compatible_tabla_article_accesory_idToarticles")
@@ -697,6 +698,7 @@ model customers {
   entry_guides                                         entry_guides[]
   purchase_orders                                      purchase_orders[]
   sales                                                sales[]
+  warranties_warranties_contact_idTocustomers          warranties[]            @relation("warranties_contact_idTocustomers")
   warranties_warranties_customer_idTocustomers         warranties[]            @relation("warranties_customer_idTocustomers")
   warranties_warranties_supplier_idTocustomers         warranties[]            @relation("warranties_supplier_idTocustomers")
 
@@ -1034,6 +1036,8 @@ model entry_guides {
   date_ven                       DateTime?                        @db.DateTime(0)
   created_at                     DateTime?                        @db.Timestamp(0)
   updated_at                     DateTime?                        @db.Timestamp(0)
+  accounting_year                Int?
+  accounting_montn               Int?
   det_entry_guide_purchase_order det_entry_guide_purchase_order[]
   documents_entry_guides_tabla   documents_entry_guides_tabla[]
   entry_guide_article            entry_guide_article[]
@@ -1475,6 +1479,8 @@ model purchase {
   status                   Int?                     @default(1)
   created_at               DateTime?                @db.Timestamp(0)
   updated_at               DateTime?                @db.Timestamp(0)
+  accounting_year          Int?
+  accounting_montn         Int?
   detail_purchase_guides   detail_purchase_guides[]
   branches                 branches                 @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "purchase_branch_id_foreign")
   companies                companies                @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "purchase_company_id_foreign")
@@ -2442,6 +2448,7 @@ model sub_categories {
   created_at  DateTime?  @db.Timestamp(0)
   updated_at  DateTime?  @db.Timestamp(0)
   image_url   String?    @db.VarChar(255)
+  articles    articles[]
   categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign")
 
   @@index([category_id], map: "sub_categories_category_id_foreign")
@@ -2817,7 +2824,7 @@ model warranties {
   diagnosis                                    String?            @db.Text
   supplier_id                                  BigInt?            @db.UnsignedBigInt
   entry_guide_id                               BigInt?            @db.UnsignedBigInt
-  contact                                      String?            @db.VarChar(100)
+  contact_id                                   BigInt?            @db.UnsignedBigInt
   follow_up_diagnosis                          String?            @db.VarChar(150)
   follow_up_status                             String?            @db.VarChar(150)
   solution                                     String?            @db.VarChar(150)
@@ -2837,6 +2844,7 @@ model warranties {
   branches_warranties_branch_idTobranches      branches           @relation("warranties_branch_idTobranches", fields: [branch_id], references: [id], onUpdate: Restrict, map: "branch_id_foreign")
   branches_warranties_branch_sale_idTobranches branches?          @relation("warranties_branch_sale_idTobranches", fields: [branch_sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "branch_sale_id_foreign")
   companies                                    companies          @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "company_id_foreign")
+  customers_warranties_contact_idTocustomers   customers?         @relation("warranties_contact_idTocustomers", fields: [contact_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "contact_id_foreign")
   customers_warranties_customer_idTocustomers  customers?         @relation("warranties_customer_idTocustomers", fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "customer_id_foreign")
   entry_guides                                 entry_guides?      @relation(fields: [entry_guide_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "entry_guide_id_foreign")
   sales                                        sales?             @relation(fields: [reference_sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "reference_sale_id_foreign")
@@ -2853,6 +2861,7 @@ model warranties {
   @@index([reference_sale_id], map: "reference_sale_id_foreign")
   @@index([supplier_id], map: "supplier_id_foreign")
   @@index([warranty_status_id], map: "warranty_status_id_foreign")
+  @@index([contact_id], map: "contact_id_foreign")
 }
 
 model warranty_statuses {
