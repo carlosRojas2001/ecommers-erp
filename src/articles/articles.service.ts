@@ -172,7 +172,7 @@ export class ArticlesService {
     const [articles, total] = await Promise.all([
       type === 'combo' ? Promise.resolve([]) : this.prisma.articles.findMany({
         where,
-        skip: aleatorio ? undefined : skip,
+        skip: aleatorio ? undefined : (isNaN(skip) ? 0 : skip),
         take: aleatorio ? 100 : limit, // Traemos más para barajar si es aleatorio
         orderBy,
         include: {
@@ -473,7 +473,7 @@ has_offer: article.has_offer ? 1 : 0,
      if (!slug || slug === 'null' || slug === 'undefined') {
     throw new NotFoundException(`Slug inválido: ${slug}`);
   }
-  
+
     const article = await this.prisma.articles.findFirst({
       where: { slug, status: 1, venta: true },
       include: {
