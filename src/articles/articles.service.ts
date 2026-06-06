@@ -48,8 +48,9 @@ export class ArticlesService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      status: 1, // Solo activos
-      venta: true, // Solo para venta
+      status: 1,
+      venta: true,
+      slug: { not: null },
     };
 
     if (search) {
