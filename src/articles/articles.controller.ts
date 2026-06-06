@@ -6,6 +6,8 @@ import {
   Post,
   UseInterceptors,
   UploadedFile,
+  ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { Serialize } from 'src/common/interceptors/serialize.interceptor';
@@ -77,8 +79,18 @@ export class ArticlesController {
   }
 
   @Serialize(ArticleResponseDto)
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.articlesService.findOne(+id);
+@Get(':id')
+findOne(@Param('id') id: string) {
+  if (!id || id === 'null' || id === 'undefined') {
+    throw new NotFoundException(`Identificador inválido: ${id}`);
   }
+
+  const numId = Number(id);
+  if (!isNaN(numId)) {
+    return this.articlesService.findOne(numId);
+  }
+
+  return this.articlesService.findBySlug(id);
+}
+
 }

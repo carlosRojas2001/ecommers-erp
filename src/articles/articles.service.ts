@@ -468,6 +468,11 @@ has_offer: article.has_offer ? 1 : 0,
   }
 
   async findBySlug(slug: string) {
+
+     if (!slug || slug === 'null' || slug === 'undefined') {
+    throw new NotFoundException(`Slug inválido: ${slug}`);
+  }
+  
     const article = await this.prisma.articles.findFirst({
       where: { slug, status: 1, venta: true },
       include: {
@@ -565,6 +570,10 @@ has_offer: article.has_offer ? 1 : 0,
   }
 
   async findOne(id: number) {
+
+      if (id === null || id === undefined || isNaN(Number(id))) {
+    throw new NotFoundException(`ID de artículo inválido: ${id}`);
+  }
     const article = await this.prisma.articles.findUnique({
       where: { id: BigInt(id) },
       include: {

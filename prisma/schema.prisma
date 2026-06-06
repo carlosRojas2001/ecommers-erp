@@ -1458,7 +1458,7 @@ model purchase {
   date                     DateTime                 @db.Date
   date_ven                 DateTime                 @db.Date
   days                     Int
-  observation              String                   @db.VarChar(255)
+  observation              String?                  @db.VarChar(255)
   detraccion               String                   @db.VarChar(255)
   fech_detraccion          DateTime?                @db.Date
   amount_detraccion        Float
@@ -2148,7 +2148,7 @@ model sc_voucher {
   tipmon        Int?
   tipcam        Decimal?        @default(0.0000) @db.Decimal(6, 4)
   total         Decimal?        @default(0.00) @db.Decimal(10, 2)
-  medpag        Int?
+  medpag        BigInt          @db.UnsignedBigInt
   tipopago      Int?
   fecdif        DateTime?       @db.Date
   porret        Decimal?        @default(0.000) @db.Decimal(12, 3)
@@ -2825,6 +2825,7 @@ model warranties {
   supplier_id                                  BigInt?            @db.UnsignedBigInt
   entry_guide_id                               BigInt?            @db.UnsignedBigInt
   contact_id                                   BigInt?            @db.UnsignedBigInt
+  contact                                      String?            @db.VarChar(100)
   follow_up_diagnosis                          String?            @db.VarChar(150)
   follow_up_status                             String?            @db.VarChar(150)
   solution                                     String?            @db.VarChar(150)
