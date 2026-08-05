@@ -128,46 +128,46 @@ export class AuthService {
   async login(dto: LoginDto) {
     const client = await this.clientsService.findByEmail(dto.email); 
 
-       if (!dto.captchaToken) {
-    throw new BadRequestException(
-      'Captcha requerido'
-    );
-  }
+  //      if (!dto.captchaToken) {
+  //   throw new BadRequestException(
+  //     'Captcha requerido'
+  //   );
+  // }
    
-      const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+      // const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
 
-       try {
+//        try {
 
-    const response =
-      await firstValueFrom(
-        this.httpService.post(
-          'https://www.google.com/recaptcha/api/siteverify',
-          null,
-          {
-            params: {
-              secret,
-              response: dto.captchaToken,
-            },
-          },
-        ),
-      );
+//     // const response =
+//     //   await firstValueFrom(
+//     //     this.httpService.post(
+//     //       'https://www.google.com/recaptcha/api/siteverify',
+//     //       null,
+//     //       {
+//     //         params: {
+//     //           secret,
+//     //           response: dto.captchaToken,
+//     //         },
+//     //       },
+//     //     ),
+//     //   );
 
-    if (!response.data.success) {
-      throw new BadRequestException(
-        'Captcha inválido'
-      );
-    }
+//     // if (!response.data.success) {
+//     //   throw new BadRequestException(
+//     //     'Captcha inválido'
+//     //   );
+//     // }
 
-  } catch (error) {
+//   } catch (error) {
 
-  if (error instanceof BadRequestException) {
-    throw error;
-  }
+//   if (error instanceof BadRequestException) {
+//     throw error;
+//   }
 
-  throw new BadRequestException(
-    'Error verificando captcha'
-  );
-}
+//   throw new BadRequestException(
+//     'Error verificando captcha'
+//   );
+// }
 
 
     if (!client || !client.password) {
@@ -239,28 +239,30 @@ export class AuthService {
   }
 
   async loginAdminUpdateImage(username: string, password: string) {
-    const user = await this.prisma.users.findUnique({
-      where: { username },
+    const client = await this.prisma.clients.findFirst({
+      where: {
+        OR: [{ email: username }, { names: username }],
+      },
     });
 
-    if (!user) {
+    if (!client) {
       throw new UnauthorizedException('Usuario no existe');
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, client.password ?? '');
 
     if (!isMatch) {
       throw new UnauthorizedException('Password incorrecto');
     }
 
-    if (user.username !== 'admin') {
+    if (client.role !== 'admin') {
       throw new UnauthorizedException('No eres administrador');
     }
 
     //  Generar JWT
     const payload = {
-      sub: user.id,
-      username: user.username,
+      sub: client.id,
+      username: client.names,
       role: 'admin',
     };
 
@@ -270,8 +272,8 @@ export class AuthService {
       message: 'Login correcto',
       token,
       user: {
-        id: user.id,
-        username: user.username,
+        id: client.id,
+        username: client.names,
       },
     };
   }
