@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { CreateArticleImageDto } from './dto/create-article_image.dto';
@@ -6,10 +6,36 @@ import { UpdateArticleImageDto } from './dto/update-article_image.to';
 
 @Injectable()
 export class ArticleImageService {
+  private readonly logger = new Logger(ArticleImageService.name);
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {}
+
+  private async notifyProductRevalidation(): Promise<void> {
+    const url = this.configService.get<string>('FRONTEND_REVALIDATE_URL');
+    const secret = this.configService.get<string>('REVALIDATE_SECRET');
+
+    if (!url || !secret) return;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'x-revalidate-secret': secret },
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (response.ok) return;
+        this.logger.warn(`Revalidación frontend respondió ${response.status}`);
+      } catch (error) {
+        this.logger.warn(`No se pudo revalidar el frontend (intento ${attempt})`);
+      }
+
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
   private formatImageUrl(url: string | null): string | null {
     if (!url) return null;
@@ -83,6 +109,8 @@ export class ArticleImageService {
         data: { image_url: image.url },
       });
     }
+
+    void this.notifyProductRevalidation();
 
     return {
       ...image,
@@ -181,6 +209,8 @@ async update(
     });
   }
 
+  void this.notifyProductRevalidation();
+
   return {
     ...image,
     id: image.id.toString(),
@@ -220,6 +250,8 @@ async setMain(id: string) {
     where: { id: articleId },
     data: { image_url: updated.url },
   });
+
+  void this.notifyProductRevalidation();
 
   return {
     ...updated,
@@ -264,6 +296,8 @@ async remove(id: string) {
         });
       }
     }
+
+    void this.notifyProductRevalidation();
 
     return {
       id: image.id.toString(),

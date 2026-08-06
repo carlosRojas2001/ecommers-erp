@@ -821,6 +821,10 @@ has_offer: article.has_offer ? 1 : 0,
       updated++;
     }
 
+    if (updated > 0) {
+      await this.notifyProductRevalidation();
+    }
+
     return { message: `Slugs generados para ${updated} artículos` };
   }
 
@@ -840,6 +844,29 @@ has_offer: article.has_offer ? 1 : 0,
 
   private generateArticleSlug(description: string, id: number): string {
     return ArticlesService.generateArticleSlug(description, id);
+  }
+
+  private async notifyProductRevalidation(): Promise<void> {
+    const url = this.configService.get<string>('FRONTEND_REVALIDATE_URL');
+    const secret = this.configService.get<string>('REVALIDATE_SECRET');
+
+    if (!url || !secret) return;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'x-revalidate-secret': secret },
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (response.ok) return;
+      } catch {
+        // Revalidation is best-effort and must not break the product operation.
+      }
+
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
+    }
   }
 
   private formatImageUrl(url: string | null): string | null {
