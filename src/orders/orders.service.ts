@@ -11,6 +11,22 @@ export class OrdersService {
 
   constructor(private prisma: PrismaService) { }
 
+  private async getDollarRate(): Promise<number> {
+    const exchangeRate = await this.prisma.exchange_rates.findFirst({
+      orderBy: { date: 'desc' },
+      select: { sale_rate: true },
+    });
+
+    return exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+  }
+
+  private toSoles(value: unknown, currencyTypeId: unknown, dollarRate: number): number {
+    const amount = Number(value) || 0;
+    return String(currencyTypeId) === '2' && dollarRate > 0
+      ? amount * dollarRate
+      : amount;
+  }
+
   async create(createOrderDto: CreateOrderDto) {
 
     let totales = 0;
@@ -112,7 +128,33 @@ async findAll(id?: string) {
     GROUP BY o.id
   `);
 
-  return order;
+  const dollarRate = await this.getDollarRate();
+
+  return order.map((currentOrder) => {
+    const items = typeof currentOrder.items === 'string'
+      ? JSON.parse(currentOrder.items)
+      : currentOrder.items;
+    const normalizedItems = Array.isArray(items)
+      ? items.map((item) => ({
+          ...item,
+          unit_price_soles: this.toSoles(item.unit_price, item.currency_type_id, dollarRate),
+          subtotal_soles: this.toSoles(item.subtotal, item.currency_type_id, dollarRate),
+        }))
+      : items;
+
+    const totalSoles = Array.isArray(normalizedItems)
+      ? normalizedItems.reduce(
+          (total, item) => total + Number(item.subtotal_soles || 0),
+          0,
+        )
+      : this.toSoles(currentOrder.total, '1', dollarRate);
+
+    return {
+      ...currentOrder,
+      items: normalizedItems,
+      total_soles: Number(totalSoles.toFixed(2)),
+    };
+  });
 }
 
 async  findOne(id: number) {
