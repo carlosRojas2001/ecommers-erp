@@ -97,6 +97,7 @@ async findAll(id?: string) {
           'quantity', oi.quantity,
           'unit_price', oi.unit_price,
           'subtotal', oi.subtotal,
+          'currency_type_id', a.currency_type_id,
           'article_description', a.description
         )
       ) AS items
@@ -229,6 +230,23 @@ GROUP BY o.id;
 
     const order = orders[0]; 
     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+    const exchangeRate = await this.prisma.exchange_rates.findFirst({
+      orderBy: { date: 'desc' },
+      select: { sale_rate: true },
+    });
+    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const toSoles = (value: unknown, currencyTypeId: unknown) => {
+      const amount = Number(value) || 0;
+      return String(currencyTypeId) === '2' && dollarRate > 0
+        ? amount * dollarRate
+        : amount;
+    };
+    const totalSoles = Array.isArray(items)
+      ? items.reduce(
+          (total, item) => total + toSoles(item.subtotal, item.currency_type_id),
+          0,
+        )
+      : toSoles(order.total, '1');
 
     // --- ENCABEZADO ---
     // Colores y fuentes
@@ -318,8 +336,8 @@ GROUP BY o.id;
 
         doc.text(item.article_description.substring(0, 50), 60, y);
         doc.text(item.quantity.toString(), 320, y, { width: 50, align: 'center' });
-        doc.text(`$${Number(item.unit_price).toFixed(2)}`, 380, y, { width: 70, align: 'right' });
-        doc.text(`$${Number(item.subtotal).toFixed(2)}`, 460, y, { width: 75, align: 'right' });
+        doc.text(`S/ ${toSoles(item.unit_price, item.currency_type_id).toFixed(2)}`, 380, y, { width: 70, align: 'right' });
+        doc.text(`S/ ${toSoles(item.subtotal, item.currency_type_id).toFixed(2)}`, 460, y, { width: 75, align: 'right' });
 
         y += 20;
       }
@@ -336,7 +354,7 @@ GROUP BY o.id;
     
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colorTexto);
     doc.text('TOTAL:', 360, totalTop + 9);
-    doc.font('Helvetica-Bold').fontSize(14).fillColor(colorPrimario).text(`$${Number(order.total).toFixed(2)}`, 400, totalTop + 8, { width: 135, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(14).fillColor(colorPrimario).text(`S/ ${totalSoles.toFixed(2)}`, 400, totalTop + 8, { width: 135, align: 'right' });
 
     // Mensaje de agradecimiento
     doc.font('Helvetica-Oblique').fontSize(10).fillColor(colorGris);
