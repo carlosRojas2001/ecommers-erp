@@ -13,6 +13,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { OrdersModule } from './orders/orders.module';
 import { HeroSliderModule } from './hero-slider/hero-slider.module';
 import { ChatbootModule } from './chatboot/chatboot.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ChatbootModule } from './chatboot/chatboot.module';
     OrdersModule,
     HeroSliderModule,
     ChatbootModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [],

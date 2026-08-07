@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import * as fs from 'fs';
@@ -9,7 +10,10 @@ import * as path from 'path';
 @Injectable()
 export class OrdersService {
 
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   private async getDollarRate(): Promise<number> {
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
@@ -29,10 +33,75 @@ export class OrdersService {
 
   async create(createOrderDto: CreateOrderDto) {
 
+    const totales = await this.calculateTotales(createOrderDto);
+
+    return this.prisma.$transaction(async (tx) => {
+      const orders = await tx.orders.create({
+        data: {
+          client_id: createOrderDto.client_id,
+          status: 'pending',
+          total: totales,
+        },
+        include: {
+          clients: true,
+        },
+      });
+
+      if (orders?.clients?.document_number == "") {
+        throw new UnauthorizedException('Debes tener registro de dni');
+      }
+
+      const item_irderns = await Promise.all(
+        createOrderDto.items.map(async (item: any) => {
+          const article = await tx.articles.findUnique({
+            where: {
+              id: item.article_id,
+            },
+          });
+          const unit_price = article?.public_price;
+          const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
+
+          return tx.order_items.create({
+            data: {
+              quantity: item.quantity,
+              unit_price: unit_price || 0,
+              subtotal: subtotal,
+
+              orders: {
+                connect: { id: orders.id, },
+              },
+              articles: {
+                connect: { id: item.article_id },
+              },
+            },
+          });
+        }),
+      );
+
+      await this.notificationsService.createNew(orders.id, undefined, tx);
+
+      return {
+        orders: { ...orders, item_irderns },
+      };
+    }).then(async (result) => {
+      const notification = await this.prisma.notifications.findFirst({
+        where: { order_id: result.orders.id, type: 'nuevo' },
+        orderBy: { id: 'desc' },
+        select: { id: true },
+      });
+
+      if (notification) {
+        await this.notificationsService.publishNew(result.orders.id, notification.id);
+      }
+
+      return result;
+    });
+  }
+
+  private async calculateTotales(createOrderDto: CreateOrderDto): Promise<number> {
     let totales = 0;
 
     for (const item of createOrderDto.items) {
-      
       const consulta = await this.prisma.articles.findUnique({
         where: {
           id: item.article_id,
@@ -43,52 +112,8 @@ export class OrdersService {
 
       totales += subtotal;
     }
-     
-    const orders = await this.prisma.orders.create({
-      data: {
-        client_id: createOrderDto.client_id,
-        
-        total:totales,
-      },
-      include:{
-        clients:true,
-      }
-    });
-      console.log(orders?.clients?.document_number)
 
-      if (orders?.clients?.document_number == "") throw new UnauthorizedException('Debes tener registro de dni')
-      
-    const item_irderns = await Promise.all(
-      createOrderDto.items.map(async (item: any) => {
-        
-        const article = await this.prisma.articles.findUnique({
-          where: {
-            id: item.article_id,
-          },
-        });
-        const unit_price = article?.public_price;
-        const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
-        
-        return this.prisma.order_items.create({
-          data: {
-            quantity: item.quantity,
-            unit_price:unit_price || 0,
-            subtotal:subtotal,
-
-            orders: {
-              connect: { id: orders.id, },
-            },
-            articles: {
-              connect: { id: item.article_id },
-            },
-          },
-        });
-      }),
-    );
-    return {
-      orders: {...orders, item_irderns},
-    };
-
+    return totales;
   }
 async findAll(id?: string) {
 

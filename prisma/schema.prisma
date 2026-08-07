@@ -1128,6 +1128,7 @@ model reviews {
 
   @@index([client_id], map: "reviews_client_id_foreign")
   @@index([article_id], map: "reviews_article_id_foreign")
+  @@unique([client_id, article_id], map: "reviews_client_id_article_id_unique")
 }
 
 model ingress_reasons {
@@ -2899,15 +2900,28 @@ model order_items {
 }
 
 model orders {
-  id          BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
-  client_id   BigInt         @db.UnsignedBigInt
-  total       Decimal        @default(0.00) @db.Decimal(10, 2)
-  status      orders_status? @default(processing)
-  created_at  DateTime       @default(now()) @db.Timestamp(0)
-  order_items order_items[]
-  clients     clients        @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_orders_client")
+  id            BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  client_id     BigInt           @db.UnsignedBigInt
+  total         Decimal          @default(0.00) @db.Decimal(10, 2)
+  status        orders_status?   @default(processing)
+  created_at    DateTime         @default(now()) @db.Timestamp(0)
+  order_items   order_items[]
+  clients       clients          @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_orders_client")
+  notifications notifications[]
 
   @@index([client_id], map: "fk_orders_client")
+}
+
+model notifications {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  order_id   BigInt    @db.UnsignedBigInt
+  type       String    @default("nuevo") @db.VarChar(20)
+  message    String?   @db.VarChar(255)
+  read_at    DateTime? @db.Timestamp(0)
+  created_at DateTime  @default(now()) @db.Timestamp(0)
+  orders     orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notifications_order_id_foreign")
+
+  @@index([order_id], map: "idx_notifications_order")
 }
 
 model hero_slides {

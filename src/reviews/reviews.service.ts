@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
@@ -8,6 +8,19 @@ export class ReviewsService {
   constructor(private prisma: PrismaService) {}
 
   async create(clientId: number, createReviewDto: CreateReviewDto) {
+    const existing = await this.prisma.reviews.findUnique({
+      where: {
+        client_id_article_id: {
+          client_id: BigInt(clientId),
+          article_id: BigInt(createReviewDto.article_id),
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('Ya has dejado una reseña para este producto. Solo puedes dejar una reseña por producto.');
+    }
+
     const review = await this.prisma.reviews.create({
       data: {
         client_id: BigInt(clientId),
