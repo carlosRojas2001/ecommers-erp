@@ -5,11 +5,11 @@ import { Type } from 'class-transformer';
 export class CreateOrderItemDto {
   @IsNumber()
   @IsNotEmpty()
-  article_id: number;
+  article_id!: number;
 
   @IsNumber()
   @IsPositive()
-  quantity: number;
+  quantity!: number;
 
   // @IsNumber()
   // @IsPositive()
@@ -21,7 +21,7 @@ export class CreateOrderItemDto {
 export class CreateOrderDto {
   @IsNumber()
   @IsNotEmpty()
-  client_id: number;
+  client_id!: number;
 
 
 
@@ -29,5 +29,10 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @IsArray()
   @Type(() => CreateOrderItemDto)
-  items: CreateOrderItemDto[];
+  items!: CreateOrderItemDto[];
+
+
+  document_type_id?: number; 
+
+
 }

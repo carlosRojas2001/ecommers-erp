@@ -14,6 +14,7 @@ import { OrdersModule } from './orders/orders.module';
 import { HeroSliderModule } from './hero-slider/hero-slider.module';
 import { ChatbootModule } from './chatboot/chatboot.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ConsultaModule } from './consulta/consulta.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     HeroSliderModule,
     ChatbootModule,
     NotificationsModule,
+    ConsultaModule,
   ],
   controllers: [],
   providers: [],

@@ -1,5 +1,19 @@
 # Integracion de ordenes en soles
 
+## document_type_id (obligatorio al crear orden)
+
+El frontend **debe** enviar `document_type_id` al crear una orden. Es obligatorio: si no se envía, el backend responde con error.
+
+| Valor | Tipo de comprobante | Documento requerido del cliente |
+|-------|---------------------|---------------------------------|
+| `1`   | Factura             | RUC (11 dígitos)                |
+| `3`   | Boleta              | DNI (8 dígitos)                 |
+
+- `document_type_id: 1` → genera una **factura**; el cliente debe tener registrado su RUC (11 dígitos).
+- `document_type_id: 3` → genera una **boleta**; el cliente debe tener registrado su DNI (8 dígitos).
+
+> El frontend debe garantizar que el cliente tenga el documento correcto según el `document_type_id` que envíe.
+
 ## Estado de la orden
 
 Al crear una orden ya no se usa `processing`. Las órdenes nuevas se registran con estado `pending`.

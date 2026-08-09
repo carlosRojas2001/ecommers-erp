@@ -31,73 +31,88 @@ export class OrdersService {
       : amount;
   }
 
-  async create(createOrderDto: CreateOrderDto) {
+async create(createOrderDto: CreateOrderDto) {
 
-    const totales = await this.calculateTotales(createOrderDto);
-
-    return this.prisma.$transaction(async (tx) => {
-      const orders = await tx.orders.create({
-        data: {
-          client_id: createOrderDto.client_id,
-          status: 'pending',
-          total: totales,
-        },
-        include: {
-          clients: true,
-        },
-      });
-
-      if (orders?.clients?.document_number == "") {
-        throw new UnauthorizedException('Debes tener registro de dni');
-      }
-
-      const item_irderns = await Promise.all(
-        createOrderDto.items.map(async (item: any) => {
-          const article = await tx.articles.findUnique({
-            where: {
-              id: item.article_id,
-            },
-          });
-          const unit_price = article?.public_price;
-          const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
-
-          return tx.order_items.create({
-            data: {
-              quantity: item.quantity,
-              unit_price: unit_price || 0,
-              subtotal: subtotal,
-
-              orders: {
-                connect: { id: orders.id, },
-              },
-              articles: {
-                connect: { id: item.article_id },
-              },
-            },
-          });
-        }),
-      );
-
-      await this.notificationsService.createNew(orders.id, undefined, tx);
-
-      return {
-        orders: { ...orders, item_irderns },
-      };
-    }).then(async (result) => {
-      const notification = await this.prisma.notifications.findFirst({
-        where: { order_id: result.orders.id, type: 'nuevo' },
-        orderBy: { id: 'desc' },
-        select: { id: true },
-      });
-
-      if (notification) {
-        await this.notificationsService.publishNew(result.orders.id, notification.id);
-      }
-
-      return result;
-    });
+  if (!createOrderDto.document_type_id) {
+    throw new UnauthorizedException('Debes indicar si es boleta o factura');
   }
 
+  const totales = await this.calculateTotales(createOrderDto);
+
+  return this.prisma.$transaction(async (tx) => {
+    const orders = await tx.orders.create({
+      data: {
+        client_id: createOrderDto.client_id,
+        document_type_id: createOrderDto.document_type_id,
+        status: 'pending',
+        total: totales,
+      },
+      include: {
+        clients: true,
+        document_types: true,
+      },
+    });
+
+    if (orders?.clients?.document_number == "") {
+      throw new UnauthorizedException('Debes tener registro de dni');
+    }
+
+    // cod_sunat 1 = factura (requiere RUC de 11 dígitos)
+    // cod_sunat 3 = boleta (requiere DNI de 8 dígitos)
+if (Number(orders.document_type_id) === 1 && orders?.clients?.document_number?.length !== 11) {
+  throw new UnauthorizedException('Para facturar necesitas registrar tu RUC (11 dígitos)');
+}
+
+if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.length !== 8) {
+  throw new UnauthorizedException('Para boleta necesitas registrar tu DNI (8 dígitos)');
+}
+
+    const item_irderns = await Promise.all(
+      createOrderDto.items.map(async (item: any) => {
+        const article = await tx.articles.findUnique({
+          where: {
+            id: item.article_id,
+          },
+        });
+        const unit_price = article?.public_price;
+        const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
+
+        return tx.order_items.create({
+          data: {
+            quantity: item.quantity,
+            unit_price: unit_price || 0,
+            subtotal: subtotal,
+
+            orders: {
+              connect: { id: orders.id, },
+            },
+            articles: {
+              connect: { id: item.article_id },
+            },
+          },
+        });
+      }),
+    );
+
+    await this.notificationsService.createNew(orders.id, undefined, tx);
+
+    return {
+      orders: { ...orders, item_irderns },
+    };
+  }).then(async (result) => {
+    const notification = await this.prisma.notifications.findFirst({
+      where: { order_id: result.orders.id, type: 'nuevo' },
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    });
+
+    if (notification) {
+      await this.notificationsService.publishNew(result.orders.id, notification.id);
+    }
+
+    return result;
+  });
+}
   private async calculateTotales(createOrderDto: CreateOrderDto): Promise<number> {
     let totales = 0;
 
@@ -114,8 +129,9 @@ export class OrdersService {
     }
 
     return totales;
-  }
-async findAll(id?: string) {
+}
+
+  async findAll(id?: string) {
 
   const where = id
     ? `WHERE c.id = '${id}'`
@@ -182,7 +198,7 @@ async findAll(id?: string) {
   });
 }
 
-async  findOne(id: number) {
+  async  findOne(id: number) {
     const respuesta = await this.prisma.$queryRaw<any[]>`
 SELECT 
   o.id,
@@ -204,7 +220,8 @@ GROUP BY o.id;
       throw new BadRequestException('Orden no encontrada');
     }
     return respuesta[0];
-  }
+}
+
   async detalleOrdenes(id:number){
      const order = await this.prisma.$queryRawUnsafe<any[]>(`
     SELECT 
@@ -239,8 +256,7 @@ GROUP BY o.id;
 
   return order[0];
 
-  }
-
+}
 
   async generatePdf(id: number, res: Response): Promise<void> {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -436,7 +452,7 @@ GROUP BY o.id;
     doc.text('Este documento es un comprobante de orden generado electrónicamente.', 50, bottomY, { align: 'center', width: 495 });
 
     doc.end();
-  }
+}
   
   async masVendidos(){
     const respuesta = await this.prisma.$queryRaw<any[]>`
@@ -449,5 +465,6 @@ GROUP BY a.id
 ORDER BY total_vendido DESC;
   `;
      return respuesta;
-  }
+}
+
 }

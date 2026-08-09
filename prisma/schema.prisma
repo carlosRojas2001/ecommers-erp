@@ -99,16 +99,15 @@ model articles {
   created_at                                                                          DateTime?                    @db.Timestamp(0)
   updated_at                                                                          DateTime?                    @db.Timestamp(0)
   is_new_for_web                                                                      Boolean?                     @default(false)
+  offer_price_percent                                                                 Decimal?                     @default(0.00) @db.Decimal(8, 2)
   has_offer                                                                           Boolean?                     @default(false)
-  offer_price_percent                                                                 Decimal?                     @default(0) @db.Decimal(10, 0)
-  slug                                                                                String?                      @unique(map: "articles_slug_unique") @db.VarChar(100)
+  slug                                                                                String?                      @unique(map: "UNI", length: 191) @db.Text
   article_images                                                                      article_images[]
   brands                                                                              brands?                      @relation(fields: [brand_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_brand_id_foreign")
   categories                                                                          categories?                  @relation(fields: [category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_category_id_foreign")
   companies                                                                           companies?                   @relation(fields: [company_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_company_type_id_foreign")
   currency_types                                                                      currency_types?              @relation(fields: [currency_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_currency_type_id_foreign")
   measurement_units                                                                   measurement_units?           @relation(fields: [measurement_unit_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_measurement_unit_id_foreign")
-  sub_categories                                                                      sub_categories?              @relation(fields: [sub_category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_sub_category_id_foreign")
   users                                                                               users?                       @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_user_id_foreign")
   build_detail_pc_tabla                                                               build_detail_pc_tabla[]
   detail_pc_compatible_tabla_detail_pc_compatible_tabla_article_accesory_idToarticles detail_pc_compatible_tabla[] @relation("detail_pc_compatible_tabla_article_accesory_idToarticles")
@@ -248,7 +247,7 @@ model build_pc_tabla {
   created_at            DateTime?               @db.Timestamp(0)
   updated_at            DateTime?               @db.Timestamp(0)
   image_build           String?                 @db.VarChar(255)
-  slug                  String?                 @unique(map: "build_pc_tabla_slug_unique") @db.VarChar(50)
+  slug                  String?                 @unique(map: "UNI", length: 191) @db.Text
   build_detail_pc_tabla build_detail_pc_tabla[]
   companies             companies               @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "build_pc_tabla_company_id_foreign")
 
@@ -466,36 +465,38 @@ model collections {
 }
 
 model companies {
-  id                       BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
-  ruc                      String               @db.VarChar(11)
-  company_name             String               @db.VarChar(80)
-  address                  String               @db.VarChar(150)
-  start_date               DateTime             @db.Date
-  default_currency_type_id BigInt               @db.UnsignedBigInt
-  min_profit               Decimal              @db.Decimal(4, 2)
-  max_profit               Decimal              @db.Decimal(4, 2)
-  ubigeo                   String               @db.VarChar(6)
-  status                   Int                  @default(1)
-  usuario_sol              String               @db.VarChar(100)
-  clave_sol                String               @db.VarChar(100)
-  detrac_cta_banco         String?              @db.VarChar(100)
-  ctaigvnw                 String?              @default("") @db.VarChar(8)
-  ctartanw                 String?              @default("") @db.VarChar(8)
-  ctaegrnw                 String?              @default("") @db.VarChar(8)
-  ctaingnw                 String?              @default("") @db.VarChar(8)
-  created_at               DateTime?            @db.Timestamp(0)
-  updated_at               DateTime?            @db.Timestamp(0)
+  id                       BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  ruc                      String                @db.VarChar(11)
+  company_name             String                @db.VarChar(80)
+  address                  String                @db.VarChar(150)
+  start_date               DateTime              @db.Date
+  default_currency_type_id BigInt                @db.UnsignedBigInt
+  min_profit               Decimal               @db.Decimal(4, 2)
+  max_profit               Decimal               @db.Decimal(4, 2)
+  ubigeo                   String                @db.VarChar(6)
+  status                   Int                   @default(1)
+  usuario_sol              String                @db.VarChar(100)
+  clave_sol                String                @db.VarChar(100)
+  detrac_cta_banco         String?               @db.VarChar(100)
+  ctaigvnw                 String?               @default("") @db.VarChar(8)
+  ctartanw                 String?               @default("") @db.VarChar(8)
+  ctaegrnw                 String?               @default("") @db.VarChar(8)
+  ctaingnw                 String?               @default("") @db.VarChar(8)
+  created_at               DateTime?             @db.Timestamp(0)
+  updated_at               DateTime?             @db.Timestamp(0)
   advances                 advances[]
   articles                 articles[]
   banks                    banks[]
   branches                 branches[]
   build_pc_tabla           build_pc_tabla[]
   collections              collections[]
-  currency_types           currency_types       @relation(fields: [default_currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "default_currency_type_id_foreign")
+  currency_types           currency_types        @relation(fields: [default_currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "default_currency_type_id_foreign")
   digital_wallets          digital_wallets[]
   dispatch_notes           dispatch_notes[]
   entry_guides             entry_guides[]
   kardex                   kardex[]
+  pdf_bank_accounts        pdf_bank_accounts[]
+  pdf_digital_wallets      pdf_digital_wallets[]
   petty_cash_motive        petty_cash_motive[]
   petty_cash_receipt       petty_cash_receipt[]
   purchase                 purchase[]
@@ -575,19 +576,20 @@ model cs_tablib {
 }
 
 model currency_types {
-  id                BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
-  name              String            @db.VarChar(20)
-  commercial_symbol String            @db.VarChar(4)
-  sunat_symbol      String            @db.VarChar(4)
-  status            Int               @default(1)
-  created_at        DateTime?         @db.Timestamp(0)
-  updated_at        DateTime?         @db.Timestamp(0)
+  id                BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  name              String              @db.VarChar(20)
+  commercial_symbol String              @db.VarChar(4)
+  sunat_symbol      String              @db.VarChar(4)
+  status            Int                 @default(1)
+  created_at        DateTime?           @db.Timestamp(0)
+  updated_at        DateTime?           @db.Timestamp(0)
   advances          advances[]
   articles          articles[]
   banks             banks[]
   collections       collections[]
   companies         companies[]
   entry_guides      entry_guides[]
+  pdf_bank_accounts pdf_bank_accounts[]
   purchase_orders   purchase_orders[]
   sales             sales[]
 }
@@ -920,29 +922,30 @@ model districts {
 }
 
 model document_types {
-  id                                                                       BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
-  cod_sunat                                                                Int
-  description                                                              String             @db.VarChar(40)
-  abbreviation                                                             String             @db.VarChar(10)
-  st_sales                                                                 Boolean            @default(true)
-  st_purchases                                                             Boolean            @default(true)
-  st_collections                                                           Boolean            @default(true)
-  st_invoices                                                              Boolean            @default(false)
-  st_transfers                                                             Boolean            @default(false)
-  st_petty_cash                                                            Boolean            @default(false)
-  st_document_sales                                                        Boolean            @default(false)
-  st_almacen                                                               Boolean            @default(false)
-  st_references_sales                                                      Boolean            @default(false)
-  status                                                                   Int                @default(1)
-  created_at                                                               DateTime?          @db.Timestamp(0)
-  updated_at                                                               DateTime?          @db.Timestamp(0)
-  collections                                                              collections[]
+  id                  BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  cod_sunat           Int
+  description         String             @db.VarChar(40)
+  abbreviation        String             @db.VarChar(10)
+  st_sales            Boolean            @default(true)
+  st_purchases        Boolean            @default(true)
+  st_collections      Boolean            @default(true)
+  st_invoices         Boolean            @default(false)
+  st_transfers        Boolean            @default(false)
+  st_petty_cash       Boolean            @default(false)
+  st_document_sales   Boolean            @default(false)
+  st_almacen          Boolean            @default(false)
+  st_references_sales Boolean            @default(false)
+  status              Int                @default(1)
+  created_at          DateTime?          @db.Timestamp(0)
+  updated_at          DateTime?          @db.Timestamp(0)
+  collections         collections[]
   dispatch_notes_dispatch_notes_document_type_idTodocument_types           dispatch_notes[]   @relation("dispatch_notes_document_type_idTodocument_types")
   dispatch_notes_dispatch_notes_reference_document_type_idTodocument_types dispatch_notes[]   @relation("dispatch_notes_reference_document_type_idTodocument_types")
-  note_reasons                                                             note_reasons[]
-  purchase                                                                 purchase[]
-  sales                                                                    sales[]
-  transaction_logs                                                         transaction_logs[]
+  note_reasons        note_reasons[]
+  purchase            purchase[]
+  sales               sales[]
+  transaction_logs    transaction_logs[]
+  orders              orders[]
 }
 
 model documents_entry_guides_tabla {
@@ -1034,10 +1037,10 @@ model entry_guides {
   payment_type_id                BigInt?
   days                           Int?
   date_ven                       DateTime?                        @db.DateTime(0)
-  created_at                     DateTime?                        @db.Timestamp(0)
-  updated_at                     DateTime?                        @db.Timestamp(0)
   accounting_year                Int?
   accounting_montn               Int?
+  created_at                     DateTime?                        @db.Timestamp(0)
+  updated_at                     DateTime?                        @db.Timestamp(0)
   det_entry_guide_purchase_order det_entry_guide_purchase_order[]
   documents_entry_guides_tabla   documents_entry_guides_tabla[]
   entry_guide_article            entry_guide_article[]
@@ -1126,9 +1129,9 @@ model reviews {
   articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade, map: "reviews_article_id_foreign")
   clients    clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, map: "reviews_client_id_foreign")
 
+  @@unique([client_id, article_id], map: "reviews_client_id_article_id_unique")
   @@index([client_id], map: "reviews_client_id_foreign")
   @@index([article_id], map: "reviews_article_id_foreign")
-  @@unique([client_id, article_id], map: "reviews_client_id_article_id_unique")
 }
 
 model ingress_reasons {
@@ -1347,6 +1350,7 @@ model payment_methods {
   abbreviation String?       @default("") @db.VarChar(5)
   created_at   DateTime?     @db.Timestamp(0)
   updated_at   DateTime?     @db.Timestamp(0)
+  st_voucher   Boolean?      @default(false)
   advances     advances[]
   collections  collections[]
 }
@@ -1478,10 +1482,10 @@ model purchase {
   nc_reference_serie       String?                  @default("") @db.VarChar(20)
   nc_reference_correlative String?                  @default("") @db.VarChar(20)
   status                   Int?                     @default(1)
-  created_at               DateTime?                @db.Timestamp(0)
-  updated_at               DateTime?                @db.Timestamp(0)
   accounting_year          Int?
   accounting_montn         Int?
+  created_at               DateTime?                @db.Timestamp(0)
+  updated_at               DateTime?                @db.Timestamp(0)
   detail_purchase_guides   detail_purchase_guides[]
   branches                 branches                 @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "purchase_branch_id_foreign")
   companies                companies                @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "purchase_company_id_foreign")
@@ -1886,7 +1890,7 @@ model sc_glosasnw {
   COMP        Int           @default(0)
   FECHA       DateTime?     @default(dbgenerated("('0000-00-00')")) @db.Date
   TIPCAM      Float?        @default(0.0000) @db.Float
-  GLOSA       String?       @db.VarChar(120)
+  GLOSA       String?       @default("") @db.VarChar(120)
   sc_moviminw sc_moviminw[]
 
   @@id([CIA, ANOPR, MESPR, CODLIB, COMP])
@@ -1926,6 +1930,7 @@ model sc_moviminw {
   sc_moviminw_correl sc_moviminw_correl[]
 
   @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN])
+   @@unique([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL], map: "sc_moviminw_unique_correl")
   @@index([CODLIB], map: "CODLIB")
   @@index([CIA, CUENTA], map: "IDX_jcmovimi_2")
 }
@@ -1941,7 +1946,7 @@ model sc_moviminw_correl {
   CORREL      Int         @default(0) @db.SmallInt
   ORDEN       Int         @default(0) @db.SmallInt
   COR_DIARIO  Int         @default(0)
-  sc_moviminw sc_moviminw @relation(fields: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN], references: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN], onDelete: Cascade, map: "FK_sc_moviminw_correl")
+  sc_moviminw sc_moviminw @relation(fields: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL], references: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL], onDelete: Cascade, map: "FK_sc_moviminw_correl")
 
   @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN, COR_DIARIO])
 }
@@ -2149,7 +2154,7 @@ model sc_voucher {
   tipmon        Int?
   tipcam        Decimal?        @default(0.0000) @db.Decimal(6, 4)
   total         Decimal?        @default(0.00) @db.Decimal(10, 2)
-  medpag        BigInt          @db.UnsignedBigInt
+  medpag        Int?
   tipopago      Int?
   fecdif        DateTime?       @db.Date
   porret        Decimal?        @default(0.000) @db.Decimal(12, 3)
@@ -2391,49 +2396,6 @@ model sire_propuesta_rvie {
   @@index([codcar], map: "codcar")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model st_guirec {
-  CIA      Int       @default(0)
-  NUMDOC   String    @db.VarChar(12)
-  SERIE    String?   @db.VarChar(40)
-  CODART   String?   @db.VarChar(13)
-  CODIGO   Int       @default(0)
-  FECHA    DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
-  DOCREF   Int       @default(0)
-  NUMREF   String?   @db.VarChar(12)
-  FECREF   DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
-  TELEFO   String?   @db.VarChar(50)
-  EMAIL    String?   @db.VarChar(50)
-  FALLA    String?   @db.Text
-  OBS      String?   @db.Text
-  DIAGN    String?   @db.VarChar(100)
-  FECRES   DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
-  CODPRO   Int       @default(0)
-  DOCCOM   Int       @default(0)
-  NUMCOM   String?   @db.VarChar(12)
-  GUIING   String?   @db.VarChar(12)
-  FECCOM   DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
-  TIPO     Int?      @default(0)
-  FECENT   DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
-  DETENT   String?   @db.Text
-  SERENT   String?   @db.VarChar(20)
-  NOTCRE   String?   @db.VarChar(12)
-  GUIREM   String?   @db.VarChar(12)
-  FECREM   DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
-  DOCPRO   String?   @db.VarChar(20)
-  DIAGPRO  String?   @db.VarChar(120)
-  DIAG     String?   @default(" ") @db.VarChar(120)
-  ESTADO   String?   @default(" ") @db.VarChar(120)
-  SOLUCION String?   @default(" ") @db.VarChar(120)
-  COSSOL   Float     @default(0.00)
-  ST       Int       @default(0)
-  CODSUC   Int?      @default(0)
-  CONTACTO String?   @default("") @db.VarChar(200)
-  STTIPO   Int?      @default(0) @db.SmallInt
-
-  @@id([CIA, NUMDOC])
-}
-
 model statuses {
   id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   name       String    @db.VarChar(255)
@@ -2449,7 +2411,6 @@ model sub_categories {
   created_at  DateTime?  @db.Timestamp(0)
   updated_at  DateTime?  @db.Timestamp(0)
   image_url   String?    @db.VarChar(255)
-  articles    articles[]
   categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign")
 
   @@index([category_id], map: "sub_categories_category_id_foreign")
@@ -2825,7 +2786,6 @@ model warranties {
   diagnosis                                    String?            @db.Text
   supplier_id                                  BigInt?            @db.UnsignedBigInt
   entry_guide_id                               BigInt?            @db.UnsignedBigInt
-  contact_id                                   BigInt?            @db.UnsignedBigInt
   contact                                      String?            @db.VarChar(100)
   follow_up_diagnosis                          String?            @db.VarChar(150)
   follow_up_status                             String?            @db.VarChar(150)
@@ -2842,6 +2802,7 @@ model warranties {
   dispatch_note_date                           DateTime?          @db.Date
   created_at                                   DateTime?          @db.DateTime(0)
   updated_At                                   DateTime?          @db.DateTime(0)
+  contact_id                                   BigInt?            @db.UnsignedBigInt
   articles                                     articles?          @relation(fields: [article_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "article_id_foreign")
   branches_warranties_branch_idTobranches      branches           @relation("warranties_branch_idTobranches", fields: [branch_id], references: [id], onUpdate: Restrict, map: "branch_id_foreign")
   branches_warranties_branch_sale_idTobranches branches?          @relation("warranties_branch_sale_idTobranches", fields: [branch_sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "branch_sale_id_foreign")
@@ -2900,16 +2861,22 @@ model order_items {
 }
 
 model orders {
-  id            BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
-  client_id     BigInt           @db.UnsignedBigInt
-  total         Decimal          @default(0.00) @db.Decimal(10, 2)
-  status        orders_status?   @default(processing)
-  created_at    DateTime         @default(now()) @db.Timestamp(0)
-  order_items   order_items[]
-  clients       clients          @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_orders_client")
-  notifications notifications[]
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  client_id         BigInt          @db.UnsignedBigInt
+  document_type_id  BigInt?         @db.UnsignedBigInt
+  total             Decimal         @default(0.00) @db.Decimal(10, 2)
+  status            orders_status?  @default(processing)
+  sale_id           BigInt?         @unique(map: "orders_sale_id_unique") @db.UnsignedBigInt
+  is_cancelled      Boolean         @default(false)
+  created_at        DateTime        @default(now()) @db.Timestamp(0)
+  notifications     notifications[]
+  order_items       order_items[]
+  clients           clients         @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_orders_client")
+  document_types    document_types? @relation(fields: [document_type_id], references: [id], onUpdate: Restrict, map: "fk_orders_document_type")
 
   @@index([client_id], map: "fk_orders_client")
+  @@index([sale_id], map: "orders_sale_id_index")
+  @@index([document_type_id], map: "fk_orders_document_type")
 }
 
 model notifications {
@@ -2918,6 +2885,7 @@ model notifications {
   type       String    @default("nuevo") @db.VarChar(20)
   message    String?   @db.VarChar(255)
   read_at    DateTime? @db.Timestamp(0)
+  deleted_at DateTime? @db.DateTime(0)
   created_at DateTime  @default(now()) @db.Timestamp(0)
   orders     orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notifications_order_id_foreign")
 
@@ -2936,6 +2904,36 @@ model hero_slides {
   name       String    @db.VarChar(255)
 }
 
+model pdf_bank_accounts {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id       BigInt         @db.UnsignedBigInt
+  currency_type_id BigInt         @db.UnsignedBigInt
+  bank_name        String         @db.VarChar(50)
+  account_number   String         @db.VarChar(30)
+  cci              String         @db.VarChar(20)
+  status           Int            @default(1)
+  created_at       DateTime?      @db.Timestamp(0)
+  updated_at       DateTime?      @db.Timestamp(0)
+  companies        companies      @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pdf_bank_accounts_company_id_foreign")
+  currency_types   currency_types @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pdf_bank_accounts_currency_type_id_foreign")
+
+  @@index([company_id], map: "pdf_bank_accounts_company_id_index")
+  @@index([currency_type_id], map: "pdf_bank_accounts_currency_type_id_foreign")
+}
+
+model pdf_digital_wallets {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id BigInt    @db.UnsignedBigInt
+  name       String    @db.VarChar(30)
+  phone      String    @db.VarChar(11)
+  status     Int       @default(1)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pdf_digital_wallets_company_id_foreign")
+
+  @@index([company_id], map: "pdf_digital_wallets_company_id_index")
+}
+
 enum orders_status {
   pending
   paid
@@ -2943,4 +2941,5 @@ enum orders_status {
   shipped
   delivered
   cancelled
+  procesado
 }

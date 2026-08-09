@@ -1,0 +1,17 @@
+- NestJS 11.0.1 (framework principal, arquitectura modular con controllers, services y modules)
+- TypeScript 5.7.3
+- Node.js 22 (requerido por NestJS 11)
+- Prisma 7.8.0 (ORM, conectado a MariaDB vía adapter @prisma/adapter-mariadb)
+- MySQL2 / MariaDB 3.5.2 (base de datos relacional)
+- JWT + Passport (@nestjs/jwt 11, passport-jwt) — autenticación stateless para clientes del ecommerce
+- Google Auth Library 10.6.2 — login con Google OAuth
+- Bcrypt 6.0.0 — hashing de contraseñas
+- Nodemailer 8.0.7 — envío de correos (recuperación de contraseña)
+- Groq SDK 1.2.0 — integración con IA (módulo chatboot)
+- Cloudinary (vía Multer) — almacenamiento de imágenes de artículos
+- Slugify 1.6.9 — generación de slugs para URLs de productos
+- PDFKit 0.18.0 — generación de PDFs
+- Axios 1.16.1 — cliente HTTP para consumir servicios externos
+- Class Validator / Class Transformer — validación de DTOs en los endpoints
+- Cookie Parser 1.4.7 — manejo de cookies (tokens de sesión)
+- Variables de entorno configuradas vía @nestjs/config + .env
