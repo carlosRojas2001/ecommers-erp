@@ -12,7 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateClientDto } from '../clients/dto/update-client.dto';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
@@ -226,6 +226,7 @@ export class AuthService {
       sub: numericId,
       email: client.email,
       username: username,
+      jti: randomUUID(),
     });
 
     return {
@@ -264,6 +265,7 @@ export class AuthService {
       sub: client.id,
       username: client.names,
       role: 'admin',
+      jti: randomUUID(),
     };
 
     const token = this.jwtService.sign(payload);

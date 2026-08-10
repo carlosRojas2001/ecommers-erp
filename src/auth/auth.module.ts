@@ -6,6 +6,10 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { HttpModule } from '@nestjs/axios';
+import { BruteForceService } from './brute-force/brute-force.service';
+import { BruteForceInterceptor } from './brute-force/brute-force.interceptor';
+import { TokenRevocationService } from './revocation/revocation.service';
+import { CsrfGuard } from './csrf/csrf.guard';
 
 @Module({
   imports: [
@@ -21,7 +25,7 @@ import { HttpModule } from '@nestjs/axios';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  providers: [AuthService, JwtStrategy, BruteForceService, BruteForceInterceptor, TokenRevocationService, CsrfGuard],
+  exports: [AuthService, JwtStrategy, PassportModule, BruteForceService, TokenRevocationService],
 })
 export class AuthModule {}

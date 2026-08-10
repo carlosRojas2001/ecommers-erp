@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import * as fs from 'fs';
@@ -132,13 +133,10 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
 }
 
   async findAll(id?: string) {
+  const idFilter = id ? Prisma.sql`WHERE c.id = ${BigInt(id)}` : Prisma.sql``;
 
-  const where = id
-    ? `WHERE c.id = '${id}'`
-    : '';
-
-  const order = await this.prisma.$queryRawUnsafe<any[]>(`
-    SELECT 
+  const order = await this.prisma.$queryRaw<any[]>`
+    SELECT
       o.id,
       o.client_id,
       o.total,
@@ -164,10 +162,10 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     LEFT JOIN articles a ON a.id = oi.article_id
     LEFT JOIN clients c ON c.id = o.client_id
 
-    ${where}
+    ${idFilter}
 
     GROUP BY o.id
-  `);
+  `;
 
   const dollarRate = await this.getDollarRate();
 
@@ -198,33 +196,44 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
   });
 }
 
-  async  findOne(id: number) {
+  private assertOrderAccess(order: any, userId?: number | string, isAdmin = false) {
+    if (isAdmin) return;
+    if (userId === undefined) {
+      throw new ForbiddenException('No autorizado');
+    }
+    if (String(order.client_id) !== String(userId)) {
+      throw new ForbiddenException('No tienes permiso para acceder a esta orden');
+    }
+  }
+
+  async  findOne(id: number, userId?: number | string, isAdmin = false) {
     const respuesta = await this.prisma.$queryRaw<any[]>`
-SELECT 
-  o.id,
-  o.client_id,
-  c.names AS client_names,
-  c.lastnames AS client_lastnames,
-  o.total,
-  o.status,
-  o.created_at
- 
-FROM orders o
-LEFT JOIN clients c ON c.id = o.client_id
-LEFT JOIN order_items oi ON oi.order_id = o.id
-LEFT JOIN articles a ON a.id = oi.article_id
-WHERE o.id = ${id}
-GROUP BY o.id;
-  `;
+ SELECT
+   o.id,
+   o.client_id,
+   c.names AS client_names,
+   c.lastnames AS client_lastnames,
+   o.total,
+   o.status,
+   o.created_at
+
+ FROM orders o
+ LEFT JOIN clients c ON c.id = o.client_id
+ LEFT JOIN order_items oi ON oi.order_id = o.id
+ LEFT JOIN articles a ON a.id = oi.article_id
+ WHERE o.id = ${id}
+ GROUP BY o.id;
+   `;
     if (!respuesta || respuesta.length === 0) {
       throw new BadRequestException('Orden no encontrada');
     }
+    this.assertOrderAccess(respuesta[0], userId, isAdmin);
     return respuesta[0];
-}
+  }
 
-  async detalleOrdenes(id:number){
-     const order = await this.prisma.$queryRawUnsafe<any[]>(`
-    SELECT 
+  async detalleOrdenes(id:number, userId?: number | string, isAdmin = false){
+     const order = await this.prisma.$queryRaw<any[]>`
+    SELECT
       o.id,
       o.client_id,
       o.total,
@@ -252,35 +261,20 @@ GROUP BY o.id;
     WHERE o.id = ${id}
 
     GROUP BY o.id
-  `);
+  `;
 
+  if (!order || order.length === 0) {
+    throw new BadRequestException('Orden no encontrada');
+  }
+  this.assertOrderAccess(order[0], userId, isAdmin);
   return order[0];
 
 }
 
-  async generatePdf(id: number, res: Response): Promise<void> {
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="orden-${id}.pdf"`,
-    ); 
-
-    doc.on('error', (err) => {
-      console.error('PDF error:', err);
-      res.status(500).end();
-    });
-
-    res.on('error', (err) => {
-      console.error('Response error:', err);
-    });
-
-    doc.pipe(res); 
-
-    // Buscar datos de la orden en la base de datos
+  async generatePdf(id: number, res: Response, userId?: number | string, isAdmin = false): Promise<void> {
+    // Verificar acceso ANTES de enviar cualquier byte de la respuesta
     const orders: any[] = await this.prisma.$queryRaw`
-    SELECT 
+    SELECT
       o.id,
       o.client_id,
       c.names AS client_names,
@@ -311,7 +305,28 @@ GROUP BY o.id;
       return;
     }
 
-    const order = orders[0]; 
+    this.assertOrderAccess(orders[0], userId, isAdmin);
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="orden-${id}.pdf"`,
+    );
+
+    doc.on('error', (err) => {
+      console.error('PDF error:', err);
+      res.status(500).end();
+    });
+
+    res.on('error', (err) => {
+      console.error('Response error:', err);
+    });
+
+    doc.pipe(res);
+
+    const order = orders[0];
     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },

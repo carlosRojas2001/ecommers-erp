@@ -18,6 +18,8 @@ import { ConsultaModule } from './consulta/consulta.module';
 import { ComplaintsModule } from './libro-reclamos/libro-reclamos.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CsrfGuard } from './auth/csrf/csrf.guard';
 
 
 
@@ -46,6 +48,11 @@ import { ThrottlerModule } from '@nestjs/throttler';
     ComplaintsModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
+    },
+  ],
 })
 export class AppModule {}

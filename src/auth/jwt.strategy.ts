@@ -3,12 +3,14 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientsService } from '../clients/clients.service';
+import { TokenRevocationService } from './revocation/revocation.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService,
     private readonly clientsService: ClientsService,
+    private readonly tokenRevocationService: TokenRevocationService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -23,12 +25,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // Si el token fue revocado (logout / cierre de sesiones), rechazar.
+    if (payload.jti && (await this.tokenRevocationService.isRevoked(payload.jti))) {
+      throw new UnauthorizedException('Sesión revocada');
+    }
+
     // Si el payload tiene role: 'admin', es un usuario administrador de la tabla 'users'
     if (payload.role === 'admin') {
       return {
         id: payload.sub,
         username: payload.username,
         role: 'admin',
+        jti: payload.jti,
+        exp: payload.exp,
       };
     }
 
@@ -45,6 +54,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: client.email,
       name: `${client.names || ''} ${client.lastnames || ''}`.trim(),
       role: client.role || 'client',
+      jti: payload.jti,
+      exp: payload.exp,
     };
   }
 }

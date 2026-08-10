@@ -79,7 +79,7 @@ export class ReviewsService {
     return reviews.map(review => this.serialize(review));
   }
 
-  async update(id: string, clientId: number, updateReviewDto: UpdateReviewDto) {
+  async update(id: string, clientId: number, updateReviewDto: UpdateReviewDto, requesterId?: number | string) {
     const review = await this.prisma.reviews.findUnique({
       where: { id: BigInt(id) }
     });
@@ -88,9 +88,9 @@ export class ReviewsService {
       throw new NotFoundException('Reseña no encontrada');
     }
 
-    // if (review.client_id !== BigInt(clientId)) {
-    //   throw new ForbiddenException('No tienes permiso para editar esta reseña');
-    // }
+    if (requesterId !== undefined && String(review.client_id) !== String(requesterId)) {
+      throw new ForbiddenException('No tienes permiso para editar esta reseña');
+    }
 
     const updatedReview = await this.prisma.reviews.update({
       where: { id: BigInt(id) },

@@ -9,6 +9,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { FavoritesService } from './favorites.service';
 import { GetClient } from '../auth/decorators/get-client.decorator';
+import { ForbiddenException } from '@nestjs/common';
 
 @Controller('favorites')
 @UseGuards(AuthGuard('jwt'))
@@ -21,7 +22,10 @@ export class FavoritesController {
   }
 
   @Get('usuario/:id')
-  getFavoritesByUser(@Param('id') id: string) {
+  getFavoritesByUser(@Param('id') id: string, @GetClient() user: any) {
+    if (user.role !== 'admin' && String(user.id) !== String(id)) {
+      throw new ForbiddenException('No tienes permiso para ver los favoritos de otro usuario');
+    }
     return this.favoritesService.getFavorites(+id);
   }
 

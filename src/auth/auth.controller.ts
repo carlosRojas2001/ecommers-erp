@@ -11,20 +11,28 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
+import { UseInterceptors } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { GetClient } from './decorators/get-client.decorator';
+import { TokenRevocationService } from './revocation/revocation.service';
 import { UpdateClientDto } from '../clients/dto/update-client.dto';
 import { LoginAdminDto } from './dto/login-admin.dto';
+import { BruteForceInterceptor } from './brute-force/brute-force.interceptor';
 
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly tokenRevocation: TokenRevocationService,
+  ) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 registros/min por IP
   async register(
     @Body() body: RegisterDto,
     @Res({ passthrough: true }) response: Response,
@@ -35,6 +43,8 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 intentos/min por IP (anti fuerza bruta)
+  @UseInterceptors(BruteForceInterceptor)
   async login(
     @Body() body: LoginDto,
     @Res({ passthrough: true }) response: Response,
@@ -45,6 +55,7 @@ export class AuthController {
   }
 
   @Post('google')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async googleLogin(
     @Body() body: GoogleAuthDto,
     @Res({ passthrough: true }) response: Response,
@@ -55,7 +66,13 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Res({ passthrough: true }) response: Response) {
+  @UseGuards(AuthGuard('jwt'))
+  logout(@GetClient() client: any, @Res({ passthrough: true }) response: Response) {
+    if (client?.jti) {
+      // exp viene en segundos; convertimos a ms para el auto-limpieza de la denylist
+      const expMs = (client.exp ?? Math.floor(Date.now() / 1000) + 3600) * 1000;
+      this.tokenRevocation.revoke(client.jti, expMs);
+    }
     response.clearCookie('jwt', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -84,6 +101,8 @@ export class AuthController {
   }
 
   @Post('login-admin')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 intentos/min por IP (anti fuerza bruta admin)
+  @UseInterceptors(BruteForceInterceptor)
   async loginAdmin(
     @Body() dto: LoginAdminDto,
     @Res({ passthrough: true }) response: Response,
@@ -114,11 +133,13 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 solicitudes/min por IP (anti email-bombing)
   forgotPassword(@Body('email') email: string) {
     return this.authService.forgotPassword(email);
   }
 
   @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 intentos/min por IP
   resetPassword(
     @Body('token') token: string,
     @Body('password') password: string,

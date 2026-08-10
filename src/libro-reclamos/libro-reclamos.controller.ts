@@ -5,9 +5,9 @@ import { Throttle } from '@nestjs/throttler';
 
 import { LibroReclamosService } from './libro-reclamos.service';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { CreateLibroReclamoDto } from './dto/create-libro-reclamo.dto';
-import { AdminGuard } from 'src/auth/guards/admin.guard';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('complaints')
 export class ComplaintsController {
