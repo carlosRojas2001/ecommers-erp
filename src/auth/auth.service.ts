@@ -128,46 +128,46 @@ export class AuthService {
   async login(dto: LoginDto) {
     const client = await this.clientsService.findByEmail(dto.email); 
 
-//        if (!dto.captchaToken) {
-//     throw new BadRequestException(
-//       'Captcha requerido'
-//     );
-//   }
+       if (!dto.captchaToken) {
+    throw new BadRequestException(
+      'Captcha requerido'
+    );
+  }
    
-//       const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+      const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
 
-//        try {
+       try {
 
-//     const response =
-//       await firstValueFrom(
-//         this.httpService.post(
-//           'https://www.google.com/recaptcha/api/siteverify',
-//           null,
-//           {
-//             params: {
-//               secret,
-//               response: dto.captchaToken,
-//             },
-//           },
-//         ),
-//       );
+    const response =
+      await firstValueFrom(
+        this.httpService.post(
+          'https://www.google.com/recaptcha/api/siteverify',
+          null,
+          {
+            params: {
+              secret,
+              response: dto.captchaToken,
+            },
+          },
+        ),
+      );
 
-//     if (!response.data.success) {
-//       throw new BadRequestException(
-//         'Captcha inválido'
-//       );
-//     }
+    if (!response.data.success) {
+      throw new BadRequestException(
+        'Captcha inválido'
+      );
+    }
 
-//   } catch (error) {
+  } catch (error) {
 
-//   if (error instanceof BadRequestException) {
-//     throw error;
-//   }
+  if (error instanceof BadRequestException) {
+    throw error;
+  }
 
-//   throw new BadRequestException(
-//     'Error verificando captcha'
-//   );
-// }
+  throw new BadRequestException(
+    'Error verificando captcha'
+  );
+}
 
 
     if (!client || !client.password) {
