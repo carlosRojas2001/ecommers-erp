@@ -102,12 +102,12 @@ export class AuthService {
     //     },
         
     //   );
-    //   //  console.log("estado",response.status)  
-    //   if (dto.document_number !== "" ) {
-    //       if (response?.status === 404) throw new UnauthorizedException('El dni no es correcto')   
-    //       if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')     
-    //      if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')
-    //   }
+      //  console.log("estado",response.status)  
+      // if (dto.document_number !== "" ) {
+      //     if (response?.status === 404) throw new UnauthorizedException('El dni no es correcto')   
+      //     if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')     
+      //    if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')
+      // }
 
   const client =
     await this.clientsService.create({
@@ -128,35 +128,35 @@ export class AuthService {
   async login(dto: LoginDto) {
     const client = await this.clientsService.findByEmail(dto.email); 
 
-  //      if (!dto.captchaToken) {
-  //   throw new BadRequestException(
-  //     'Captcha requerido'
-  //   );
-  // }
+//        if (!dto.captchaToken) {
+//     throw new BadRequestException(
+//       'Captcha requerido'
+//     );
+//   }
    
-      // const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+//       const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
 
 //        try {
 
-//     // const response =
-//     //   await firstValueFrom(
-//     //     this.httpService.post(
-//     //       'https://www.google.com/recaptcha/api/siteverify',
-//     //       null,
-//     //       {
-//     //         params: {
-//     //           secret,
-//     //           response: dto.captchaToken,
-//     //         },
-//     //       },
-//     //     ),
-//     //   );
+//     const response =
+//       await firstValueFrom(
+//         this.httpService.post(
+//           'https://www.google.com/recaptcha/api/siteverify',
+//           null,
+//           {
+//             params: {
+//               secret,
+//               response: dto.captchaToken,
+//             },
+//           },
+//         ),
+//       );
 
-//     // if (!response.data.success) {
-//     //   throw new BadRequestException(
-//     //     'Captcha inválido'
-//     //   );
-//     // }
+//     if (!response.data.success) {
+//       throw new BadRequestException(
+//         'Captcha inválido'
+//       );
+//     }
 
 //   } catch (error) {
 

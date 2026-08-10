@@ -15,9 +15,16 @@ import { HeroSliderModule } from './hero-slider/hero-slider.module';
 import { ChatbootModule } from './chatboot/chatboot.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ConsultaModule } from './consulta/consulta.module';
+import { ComplaintsModule } from './libro-reclamos/libro-reclamos.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ThrottlerModule } from '@nestjs/throttler';
+
+
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -36,6 +43,7 @@ import { ConsultaModule } from './consulta/consulta.module';
     ChatbootModule,
     NotificationsModule,
     ConsultaModule,
+    ComplaintsModule,
   ],
   controllers: [],
   providers: [],
