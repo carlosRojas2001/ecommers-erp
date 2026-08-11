@@ -32,7 +32,9 @@ export class CreateOrderDto {
   items!: CreateOrderItemDto[];
 
 
-  document_type_id?: number; 
+  @IsNumber()
+  @IsNotEmpty()
+  document_type_id!: number;
 
 
 }
