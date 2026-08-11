@@ -30,7 +30,8 @@ export class OrdersService {
     return String(currencyTypeId) === '2' && dollarRate > 0
       ? amount * dollarRate
       : amount;
-  }
+  } 
+  
 
 async create(createOrderDto: CreateOrderDto) {
 
