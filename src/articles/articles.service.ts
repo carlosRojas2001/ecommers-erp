@@ -25,7 +25,7 @@ export class ArticlesService {
     nuevos?: boolean;
     ofertas?: boolean;
     type?: string;
-    aleatorio?: boolean;
+    aleatorio?: boolean;  
   }) {
     const {
       page = 1,
@@ -135,6 +135,8 @@ export class ArticlesService {
     if (ofertas) {
       where.has_offer = true;
     }
+    
+
 
     // ── Inteligencia de Type Filter ──────────────────────────────────────────
     // Si envían type='brand' y un search, intentamos buscar esa marca y filtrar por ella
@@ -232,6 +234,7 @@ export class ArticlesService {
 
     // Si hay más de una condición usar OR, si hay una sola usarla directa
     const comboWhere: any =
+      
       comboOrConditions.length > 1
         ? { OR: comboOrConditions }
         : comboOrConditions.length === 1
@@ -243,12 +246,22 @@ export class ArticlesService {
 
     const rawCombos = (needCombos && !skipCombos) || type === 'combo'
       ? await this.prisma.build_pc_tabla.findMany({
-          where: comboWhere,
+          where: {...comboWhere,
+              build_detail_pc_tabla: {
+    some: {
+      articles: {
+        habilitado_web:true
+      },
+    },
+  },
+          },
           take: aleatorio ? 50 : limit,
           include: {
             build_detail_pc_tabla: {
+
               include: {
                 articles: {
+                  
                   include: {
                     article_images: {
                       orderBy: { position: 'asc' },

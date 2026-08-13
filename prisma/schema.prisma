@@ -23,11 +23,11 @@ model advances {
   status            Int             @default(1)
   created_at        DateTime?       @db.Timestamp(0)
   updated_at        DateTime?       @db.Timestamp(0)
-  banks             banks           @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "advances_bank_id_foreign")
-  companies         companies       @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "advances_company_id_foreign")
-  currency_types    currency_types  @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "advances_currency_type_id_foreign")
-  customers         customers       @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "advances_customer_id_foreign")
-  payment_methods   payment_methods @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "advances_payment_method_id_foreign")
+  banks             banks           @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_bank_id_foreign")
+  companies         companies       @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_company_id_foreign")
+  currency_types    currency_types  @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_currency_type_id_foreign")
+  customers         customers       @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_customer_id_foreign")
+  payment_methods   payment_methods @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "advances_payment_method_id_foreign")
   collections       collections[]
 
   @@index([bank_id], map: "advances_bank_id_foreign")
@@ -54,7 +54,7 @@ model article_type {
   id         BigInt   @id @default(autoincrement())
   name       String?  @db.VarChar(50)
   created_at DateTime @default(now()) @db.Timestamp(0)
-  updated_at DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.Timestamp(0)
+  updated_at DateTime @default(dbgenerated("('0000-00-00 00:00:00')")) @db.Timestamp(0)
 }
 
 model articles {
@@ -87,6 +87,7 @@ model articles {
   distributor_price_percent                                                           Decimal                      @default(0.00) @db.Decimal(8, 2)
   authorized_price_percent                                                            Decimal                      @default(0.00) @db.Decimal(8, 2)
   venta                                                                               Boolean                      @default(true)
+  habilitado_web                                                                      Boolean                      @default(true)
   status                                                                              Int                          @default(1) @db.TinyInt
   state_modify_article                                                                Int                          @default(0)
   filt_NameEsp                                                                        String?                      @db.VarChar(255)
@@ -102,13 +103,15 @@ model articles {
   offer_price_percent                                                                 Decimal?                     @default(0.00) @db.Decimal(8, 2)
   has_offer                                                                           Boolean?                     @default(false)
   slug                                                                                String?                      @unique(map: "UNI", length: 191) @db.Text
+
+
   article_images                                                                      article_images[]
-  brands                                                                              brands?                      @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "articles_brand_id_foreign")
-  categories                                                                          categories?                  @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "articles_category_id_foreign")
-  companies                                                                           companies?                   @relation(fields: [company_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "articles_company_type_id_foreign")
-  currency_types                                                                      currency_types?              @relation(fields: [currency_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "articles_currency_type_id_foreign")
-  measurement_units                                                                   measurement_units?           @relation(fields: [measurement_unit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "articles_measurement_unit_id_foreign")
-  users                                                                               users?                       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "articles_user_id_foreign")
+  brands                                                                              brands?                      @relation(fields: [brand_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_brand_id_foreign")
+  categories                                                                          categories?                  @relation(fields: [category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_category_id_foreign")
+  companies                                                                           companies?                   @relation(fields: [company_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_company_type_id_foreign")
+  currency_types                                                                      currency_types?              @relation(fields: [currency_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_currency_type_id_foreign")
+  measurement_units                                                                   measurement_units?           @relation(fields: [measurement_unit_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_measurement_unit_id_foreign")
+  users                                                                               users?                       @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_user_id_foreign")
   build_detail_pc_tabla                                                               build_detail_pc_tabla[]
   detail_pc_compatible_tabla_detail_pc_compatible_tabla_article_accesory_idToarticles detail_pc_compatible_tabla[] @relation("detail_pc_compatible_tabla_article_accesory_idToarticles")
   detail_pc_compatible_tabla_detail_pc_compatible_tabla_article_major_idToarticles    detail_pc_compatible_tabla[] @relation("detail_pc_compatible_tabla_article_major_idToarticles")
@@ -126,6 +129,8 @@ model articles {
   sale_item_serial                                                                    sale_item_serial[]
   visible_articles                                                                    visible_articles[]
   warranties                                                                          warranties[]
+  
+  sub_categories  sub_categories? @relation(fields: [sub_category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_sub_category_id_foreign")
 
   @@index([brand_id], map: "articles_brand_id_foreign")
   @@index([category_id], map: "articles_category_id_foreign")
@@ -149,9 +154,9 @@ model banks {
   created_at         DateTime?      @db.Timestamp(0)
   updated_at         DateTime?      @db.Timestamp(0)
   advances           advances[]
-  companies          companies      @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "banks_company_id_foreign")
-  currency_types     currency_types @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "banks_currency_type_id_foreign")
-  users              users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "banks_user_id_foreign")
+  companies          companies      @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "banks_company_id_foreign")
+  currency_types     currency_types @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "banks_currency_type_id_foreign")
+  users              users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "banks_user_id_foreign")
   collections        collections[]
 
   @@index([company_id], map: "banks_company_id_foreign")
@@ -165,7 +170,7 @@ model branch_phones {
   phone      String    @db.VarChar(12)
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
-  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "branch_phones_branch_id_foreign")
+  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "branch_phones_branch_id_foreign")
 
   @@index([branch_id], map: "branch_phones_branch_id_foreign")
 }
@@ -187,7 +192,7 @@ model branches {
   created_at                                                                        DateTime?                  @db.Timestamp(0)
   updated_at                                                                        DateTime?                  @db.Timestamp(0)
   branch_phones                                                                     branch_phones[]
-  companies                                                                         companies                  @relation(fields: [cia_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "branches_cia_id_foreign")
+  companies                                                                         companies                  @relation(fields: [cia_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "branches_cia_id_foreign")
   dispatch_article_serials_dispatch_article_serials_destination_branch_idTobranches dispatch_article_serials[] @relation("dispatch_article_serials_destination_branch_idTobranches")
   dispatch_article_serials_dispatch_article_serials_origin_branch_idTobranches      dispatch_article_serials[] @relation("dispatch_article_serials_origin_branch_idTobranches")
   dispatch_notes_dispatch_notes_branch_idTobranches                                 dispatch_notes[]           @relation("dispatch_notes_branch_idTobranches")
@@ -227,8 +232,8 @@ model build_detail_pc_tabla {
   status         Boolean        @default(true)
   created_at     DateTime?      @db.Timestamp(0)
   updated_at     DateTime?      @db.Timestamp(0)
-  articles       articles       @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "build_detail_pc_tabla_article_id_foreign")
-  build_pc_tabla build_pc_tabla @relation(fields: [build_pc_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "build_detail_pc_tabla_build_pc_id_foreign")
+  articles       articles       @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "build_detail_pc_tabla_article_id_foreign")
+  build_pc_tabla build_pc_tabla @relation(fields: [build_pc_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "build_detail_pc_tabla_build_pc_id_foreign")
 
   @@index([article_id], map: "build_detail_pc_tabla_article_id_foreign")
   @@index([build_pc_id], map: "build_detail_pc_tabla_build_pc_id_foreign")
@@ -247,9 +252,9 @@ model build_pc_tabla {
   created_at            DateTime?               @db.Timestamp(0)
   updated_at            DateTime?               @db.Timestamp(0)
   image_build           String?                 @db.VarChar(255)
-  slug                  String?                 @unique(map: "UNI", length: 191) @db.Text
+  slug                  String?                 @unique(map: "UNI",length: 191) @db.Text
   build_detail_pc_tabla build_detail_pc_tabla[]
-  companies             companies               @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "build_pc_tabla_company_id_foreign")
+  companies             companies               @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "build_pc_tabla_company_id_foreign")
 
   @@index([company_id], map: "build_pc_tabla_company_id_foreign")
 }
@@ -329,16 +334,16 @@ model clipro {
   LINEA        Float?         @default(0.00) @db.Float
   OTROS        String?        @db.Text
   TIPREG       Int?           @default(0)
-  FECINS       DateTime?      @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECINS       DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
   USRALT       Int?           @default(0)
-  FECALT       DateTime?      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECALT       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRMOD       Int?           @default(0)
-  FECMOD       DateTime?      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECMOD       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRDES       Int?           @default(0)
-  FECDES       DateTime?      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECDES       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   SIT          Int?           @default(0)
   STRETE       Int?           @default(0)
-  FECRET       DateTime?      @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECRET       DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
   cliprocorreo cliprocorreo[]
 
   @@id([CIA, CODIGO])
@@ -368,7 +373,7 @@ model cliprofamilia {
   NOMBRES        String?        @db.VarChar(35)
   CODPAR         Int?           @default(0)
   CODSEX         Int?           @default(0)
-  FECNAC         DateTime?      @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECNAC         DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
   clipropersonal clipropersonal @relation(fields: [CIA, CODIGO, CODPER], references: [CIA, CODIGO, CODPER], onDelete: Cascade, map: "cliprofamilia_ibfk_1")
 
   @@id([CIA, CODIGO, CODPER, CODFAM])
@@ -392,7 +397,7 @@ model clipropersonal {
   NOMBRES       String?         @db.VarChar(35)
   CODCAR        Int?            @default(0)
   CODSUC        Int?            @default(0)
-  FECNAC        DateTime?       @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECNAC        DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
   CODSEX        Int?            @default(0)
   cliprofamilia cliprofamilia[]
 
@@ -446,14 +451,14 @@ model collections {
   advance_id              BigInt?          @db.UnsignedBigInt
   created_at              DateTime?        @db.Timestamp(0)
   updated_at              DateTime?        @db.Timestamp(0)
-  advances                advances?        @relation(fields: [advance_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_advance_id_foreign")
-  banks                   banks?           @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_bank_id_foreign")
-  companies               companies        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_company_id_foreign")
-  currency_types          currency_types   @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_currency_type_id_foreign")
-  digital_wallets         digital_wallets? @relation(fields: [digital_wallet_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_digital_wallet_id_foreign")
-  payment_methods         payment_methods  @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_payment_method_id_foreign")
-  document_types          document_types   @relation(fields: [sale_document_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_sale_document_type_id_foreign")
-  sales                   sales            @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "collections_sale_id_foreign")
+  advances                advances?        @relation(fields: [advance_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_advance_id_foreign")
+  banks                   banks?           @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_bank_id_foreign")
+  companies               companies        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_company_id_foreign")
+  currency_types          currency_types   @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_currency_type_id_foreign")
+  digital_wallets         digital_wallets? @relation(fields: [digital_wallet_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_digital_wallet_id_foreign")
+  payment_methods         payment_methods  @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_payment_method_id_foreign")
+  document_types          document_types   @relation(fields: [sale_document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_sale_document_type_id_foreign")
+  sales                   sales            @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "collections_sale_id_foreign")
 
   @@index([advance_id], map: "collections_advance_id_foreign")
   @@index([bank_id], map: "collections_bank_id_foreign")
@@ -491,7 +496,7 @@ model companies {
   branches                 branches[]
   build_pc_tabla           build_pc_tabla[]
   collections              collections[]
-  currency_types           currency_types        @relation(fields: [default_currency_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "default_currency_type_id_foreign")
+  currency_types           currency_types        @relation(fields: [default_currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "default_currency_type_id_foreign")
   digital_wallets          digital_wallets[]
   dispatch_notes           dispatch_notes[]
   entry_guides             entry_guides[]
@@ -693,9 +698,9 @@ model customers {
   customer_emails                                      customer_emails[]
   customer_phones                                      customer_phones[]
   customer_portfolios                                  customer_portfolios[]
-  customer_document_types                              customer_document_types @relation(fields: [customer_document_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "customers_customer_document_type_id_foreign")
-  customer_types                                       customer_types?         @relation(fields: [customer_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "customers_customer_type_id_foreign")
-  record_types                                         record_types?           @relation(fields: [record_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "customers_record_type_id_foreign")
+  customer_document_types                              customer_document_types @relation(fields: [customer_document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "customers_customer_document_type_id_foreign")
+  customer_types                                       customer_types?         @relation(fields: [customer_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "customers_customer_type_id_foreign")
+  record_types                                         record_types?           @relation(fields: [record_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "customers_record_type_id_foreign")
   dispatch_notes_dispatch_notes_customer_idTocustomers dispatch_notes[]        @relation("dispatch_notes_customer_idTocustomers")
   dispatch_notes_dispatch_notes_supplier_idTocustomers dispatch_notes[]        @relation("dispatch_notes_supplier_idTocustomers")
   entry_guides                                         entry_guides[]
@@ -726,8 +731,8 @@ model det_entry_guide_purchase_order {
   entry_guide_id    BigInt          @db.UnsignedBigInt
   created_at        DateTime?       @db.Timestamp(0)
   updated_at        DateTime?       @db.Timestamp(0)
-  entry_guides      entry_guides    @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "det_entry_guide_purchase_order_entry_guide_id_foreign")
-  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "det_entry_guide_purchase_order_purchase_order_id_foreign")
+  entry_guides      entry_guides    @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "det_entry_guide_purchase_order_entry_guide_id_foreign")
+  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "det_entry_guide_purchase_order_purchase_order_id_foreign")
 
   @@index([entry_guide_id], map: "det_entry_guide_purchase_order_entry_guide_id_foreign")
   @@index([purchase_order_id], map: "det_entry_guide_purchase_order_purchase_order_id_foreign")
@@ -752,8 +757,8 @@ model detail_pc_compatible_tabla {
   status                                                            Boolean   @default(true)
   created_at                                                        DateTime? @db.Timestamp(0)
   updated_at                                                        DateTime? @db.Timestamp(0)
-  articles_detail_pc_compatible_tabla_article_accesory_idToarticles articles  @relation("detail_pc_compatible_tabla_article_accesory_idToarticles", fields: [article_accesory_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "detail_pc_compatible_tabla_article_accesory_id_foreign")
-  articles_detail_pc_compatible_tabla_article_major_idToarticles    articles  @relation("detail_pc_compatible_tabla_article_major_idToarticles", fields: [article_major_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "detail_pc_compatible_tabla_article_major_id_foreign")
+  articles_detail_pc_compatible_tabla_article_accesory_idToarticles articles  @relation("detail_pc_compatible_tabla_article_accesory_idToarticles", fields: [article_accesory_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "detail_pc_compatible_tabla_article_accesory_id_foreign")
+  articles_detail_pc_compatible_tabla_article_major_idToarticles    articles  @relation("detail_pc_compatible_tabla_article_major_idToarticles", fields: [article_major_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "detail_pc_compatible_tabla_article_major_id_foreign")
 
   @@index([article_accesory_id], map: "detail_pc_compatible_tabla_article_accesory_id_foreign")
   @@index([article_major_id], map: "detail_pc_compatible_tabla_article_major_id_foreign")
@@ -773,7 +778,7 @@ model detail_purchase_guides {
   process_status  String    @db.VarChar(255)
   created_at      DateTime? @db.Timestamp(0)
   updated_at      DateTime? @db.Timestamp(0)
-  articles        articles  @relation(fields: [article_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "detail_purchase_guides_article_id_foreign")
+  articles        articles  @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "detail_purchase_guides_article_id_foreign")
   purchase        purchase  @relation(fields: [purchase_id], references: [id], onDelete: Cascade, map: "detail_purchase_guides_purchase_id_foreign")
 
   @@index([article_id], map: "detail_purchase_guides_article_id_foreign")
@@ -800,8 +805,8 @@ model digital_wallets {
   created_at         DateTime?     @db.Timestamp(0)
   updated_at         DateTime?     @db.Timestamp(0)
   collections        collections[]
-  companies          companies     @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "digital_wallets_company_id_foreign")
-  users              users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "digital_wallets_user_id_foreign")
+  companies          companies     @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "digital_wallets_company_id_foreign")
+  users              users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "digital_wallets_user_id_foreign")
 
   @@index([company_id], map: "digital_wallets_company_id_foreign")
   @@index([user_id], map: "digital_wallets_user_id_foreign")
@@ -818,7 +823,7 @@ model dispatch_article {
   weight          Decimal?       @db.Decimal(8, 2)
   saldo           Decimal?       @db.Decimal(8, 2)
   subtotal_weight Decimal?       @db.Decimal(8, 2)
-  articles        articles       @relation(fields: [article_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_article_article_id_foreign")
+  articles        articles       @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "dispatch_article_article_id_foreign")
   dispatch_notes  dispatch_notes @relation(fields: [dispatch_id], references: [id], onDelete: Cascade, map: "dispatch_article_dispatch_id_foreign")
 
   @@index([article_id], map: "dispatch_article_article_id_foreign")
@@ -836,11 +841,11 @@ model dispatch_article_serials {
   destination_branch_id                                             BigInt?           @db.UnsignedBigInt
   created_at                                                        DateTime?         @db.Timestamp(0)
   updated_at                                                        DateTime?         @db.Timestamp(0)
-  articles                                                          articles          @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "dispatch_article_serials_article_id_foreign")
-  branches_dispatch_article_serials_destination_branch_idTobranches branches?         @relation("dispatch_article_serials_destination_branch_idTobranches", fields: [destination_branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "dispatch_article_serials_destination_branch_id_foreign")
-  dispatch_notes                                                    dispatch_notes    @relation(fields: [dispatch_note_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "dispatch_article_serials_dispatch_note_id_foreign")
-  emission_reasons                                                  emission_reasons? @relation(fields: [emission_reasons_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "dispatch_article_serials_emission_reasons_id_foreign")
-  branches_dispatch_article_serials_origin_branch_idTobranches      branches?         @relation("dispatch_article_serials_origin_branch_idTobranches", fields: [origin_branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "dispatch_article_serials_origin_branch_id_foreign")
+  articles                                                          articles          @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_article_id_foreign")
+  branches_dispatch_article_serials_destination_branch_idTobranches branches?         @relation("dispatch_article_serials_destination_branch_idTobranches", fields: [destination_branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_destination_branch_id_foreign")
+  dispatch_notes                                                    dispatch_notes    @relation(fields: [dispatch_note_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_dispatch_note_id_foreign")
+  emission_reasons                                                  emission_reasons? @relation(fields: [emission_reasons_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_emission_reasons_id_foreign")
+  branches_dispatch_article_serials_origin_branch_idTobranches      branches?         @relation("dispatch_article_serials_origin_branch_idTobranches", fields: [origin_branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "dispatch_article_serials_origin_branch_id_foreign")
 
   @@index([article_id], map: "dispatch_article_serials_article_id_foreign")
   @@index([destination_branch_id], map: "dispatch_article_serials_destination_branch_id_foreign")
@@ -886,16 +891,16 @@ model dispatch_notes {
   updated_at                                                               DateTime?                  @db.Timestamp(0)
   dispatch_article                                                         dispatch_article[]
   dispatch_article_serials                                                 dispatch_article_serials[]
-  branches_dispatch_notes_branch_idTobranches                              branches?                  @relation("dispatch_notes_branch_idTobranches", fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_branch_id_foreign")
-  companies                                                                companies?                 @relation(fields: [cia_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_cia_id_foreign")
-  drivers                                                                  drivers?                   @relation(fields: [cod_conductor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_cod_conductor_foreign")
-  customers_dispatch_notes_customer_idTocustomers                          customers?                 @relation("dispatch_notes_customer_idTocustomers", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_customer_id_foreign")
+  branches_dispatch_notes_branch_idTobranches                              branches?                  @relation("dispatch_notes_branch_idTobranches", fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_branch_id_foreign")
+  companies                                                                companies?                 @relation(fields: [cia_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_cia_id_foreign")
+  drivers                                                                  drivers?                   @relation(fields: [cod_conductor], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_cod_conductor_foreign")
+  customers_dispatch_notes_customer_idTocustomers                          customers?                 @relation("dispatch_notes_customer_idTocustomers", fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_customer_id_foreign")
   customer_addresses                                                       customer_addresses?        @relation(fields: [destination_branch_client], references: [id], map: "dispatch_notes_destination_branch_client_foreign")
-  branches_dispatch_notes_destination_branch_idTobranches                  branches?                  @relation("dispatch_notes_destination_branch_idTobranches", fields: [destination_branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_destination_branch_id_foreign")
-  document_types_dispatch_notes_document_type_idTodocument_types           document_types?            @relation("dispatch_notes_document_type_idTodocument_types", fields: [document_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_document_type_id_foreign")
-  document_types_dispatch_notes_reference_document_type_idTodocument_types document_types?            @relation("dispatch_notes_reference_document_type_idTodocument_types", fields: [reference_document_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_reference_document_type_id_foreign")
-  customers_dispatch_notes_supplier_idTocustomers                          customers?                 @relation("dispatch_notes_supplier_idTocustomers", fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_supplier_id_foreign")
-  transport_companies                                                      transport_companies?       @relation(fields: [transport_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dispatch_notes_transport_id_foreign")
+  branches_dispatch_notes_destination_branch_idTobranches                  branches?                  @relation("dispatch_notes_destination_branch_idTobranches", fields: [destination_branch_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_destination_branch_id_foreign")
+  document_types_dispatch_notes_document_type_idTodocument_types           document_types?            @relation("dispatch_notes_document_type_idTodocument_types", fields: [document_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_document_type_id_foreign")
+  document_types_dispatch_notes_reference_document_type_idTodocument_types document_types?            @relation("dispatch_notes_reference_document_type_idTodocument_types", fields: [reference_document_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_reference_document_type_id_foreign")
+  customers_dispatch_notes_supplier_idTocustomers                          customers?                 @relation("dispatch_notes_supplier_idTocustomers", fields: [supplier_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_supplier_id_foreign")
+  transport_companies                                                      transport_companies?       @relation(fields: [transport_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "dispatch_notes_transport_id_foreign")
 
   @@unique([cia_id, branch_id, document_type_id, serie, correlativo], map: "cia_id")
   @@index([branch_id], map: "dispatch_notes_branch_id_foreign")
@@ -975,7 +980,7 @@ model drivers {
   created_at                DateTime?               @db.Timestamp(0)
   updated_at                DateTime?               @db.Timestamp(0)
   dispatch_notes            dispatch_notes[]
-  customer_document_types   customer_document_types @relation(fields: [customer_document_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "drivers_customer_document_type_id_foreign")
+  customer_document_types   customer_document_types @relation(fields: [customer_document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "drivers_customer_document_type_id_foreign")
 
   @@index([customer_document_type_id], map: "drivers_customer_document_type_id_foreign")
 }
@@ -1004,7 +1009,7 @@ model entry_guide_article {
   saldo           Float?
   created_at      DateTime?     @db.Timestamp(0)
   updated_at      DateTime?     @db.Timestamp(0)
-  articles        articles      @relation(fields: [article_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entry_guide_article_article_id_foreign")
+  articles        articles      @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "entry_guide_article_article_id_foreign")
   entry_guides    entry_guides? @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, map: "entry_guide_article_ibfk_1")
 
   @@index([article_id], map: "entry_guide_article_article_id_foreign")
@@ -1017,7 +1022,7 @@ model entry_guides {
   serie                          String                           @default("") @db.VarChar(20)
   correlative                    String                           @default("") @db.VarChar(20)
   customer_id                    BigInt                           @default(0) @db.UnsignedBigInt
-  date                           DateTime                         @default(dbgenerated("'0000-00-00'")) @db.Date
+  date                           DateTime                         @default(dbgenerated("('0000-00-00')")) @db.Date
   includ_igv                     Boolean?                         @default(false)
   currency_id                    BigInt                           @default(0) @db.UnsignedBigInt
   cia_id                         BigInt                           @default(0) @db.UnsignedBigInt
@@ -1045,11 +1050,11 @@ model entry_guides {
   det_entry_guide_purchase_order det_entry_guide_purchase_order[]
   documents_entry_guides_tabla   documents_entry_guides_tabla[]
   entry_guide_article            entry_guide_article[]
-  branches                       branches                         @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entry_guides_branch_id_foreign")
-  companies                      companies                        @relation(fields: [cia_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entry_guides_cia_id_foreign")
-  currency_types                 currency_types                   @relation(fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entry_guides_currency_id_foreign")
-  customers                      customers                        @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entry_guides_customer_id_foreign")
-  ingress_reasons                ingress_reasons                  @relation(fields: [ingress_reason_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entry_guides_ingress_reason_id_foreign")
+  branches                       branches                         @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "entry_guides_branch_id_foreign")
+  companies                      companies                        @relation(fields: [cia_id], references: [id], onUpdate: Restrict, map: "entry_guides_cia_id_foreign")
+  currency_types                 currency_types                   @relation(fields: [currency_id], references: [id], onUpdate: Restrict, map: "entry_guides_currency_id_foreign")
+  customers                      customers                        @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "entry_guides_customer_id_foreign")
+  ingress_reasons                ingress_reasons                  @relation(fields: [ingress_reason_id], references: [id], onUpdate: Restrict, map: "entry_guides_ingress_reason_id_foreign")
   entry_item_serials             entry_item_serials[]
   shopping_income_guide          shopping_income_guide[]
   warranties                     warranties[]
@@ -1071,9 +1076,9 @@ model entry_item_serials {
   status         Int          @default(1)
   created_at     DateTime?    @db.Timestamp(0)
   updated_at     DateTime?    @db.Timestamp(0)
-  articles       articles     @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "entry_item_serials_article_id_foreign")
-  branches       branches     @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "entry_item_serials_branch_id_foreign")
-  entry_guides   entry_guides @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "entry_item_serials_entry_guide_id_foreign")
+  articles       articles     @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "entry_item_serials_article_id_foreign")
+  branches       branches     @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "entry_item_serials_branch_id_foreign")
+  entry_guides   entry_guides @relation(fields: [entry_guide_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "entry_item_serials_entry_guide_id_foreign")
 
   @@index([article_id], map: "entry_item_serials_article_id_foreign")
   @@index([branch_id], map: "entry_item_serials_branch_id_foreign")
@@ -1153,7 +1158,7 @@ model installments {
   due_date           DateTime  @db.Date
   created_at         DateTime? @db.Timestamp(0)
   updated_at         DateTime? @db.Timestamp(0)
-  sales              sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "installments_sale_id_foreign")
+  sales              sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "installments_sale_id_foreign")
 
   @@index([sale_id], map: "installments_sale_id_foreign")
 }
@@ -1195,8 +1200,8 @@ model kardex {
   status      Boolean?
   created_at  DateTime? @db.Timestamp(0)
   updated_at  DateTime? @db.Timestamp(0)
-  branches    branches  @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "kardex_branch_id_foreign")
-  companies   companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "kardex_company_id_foreign")
+  branches    branches  @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "kardex_branch_id_foreign")
+  companies   companies @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "kardex_company_id_foreign")
 
   @@index([branch_id], map: "kardex_branch_id_foreign")
   @@index([company_id], map: "kardex_company_id_foreign")
@@ -1215,7 +1220,7 @@ model login_attempts {
   role_id               BigInt?   @db.UnsignedBigInt
   created_at            DateTime? @db.Timestamp(0)
   updated_at            DateTime? @db.Timestamp(0)
-  users                 users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "login_attempts_user_id_foreign")
+  users                 users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "login_attempts_user_id_foreign")
 
   @@index([user_id], map: "login_attempts_user_id_foreign")
   @@index([username], map: "login_attempts_username_index")
@@ -1237,8 +1242,8 @@ model menu_role {
   role_id    BigInt    @db.UnsignedBigInt
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
-  menus      menus     @relation(fields: [menu_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "menu_role_menu_id_foreign")
-  roles      roles     @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "menu_role_role_id_foreign")
+  menus      menus     @relation(fields: [menu_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "menu_role_menu_id_foreign")
+  roles      roles     @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "menu_role_role_id_foreign")
 
   @@unique([menu_id, role_id], map: "menu_role_menu_id_role_id_unique")
   @@index([role_id], map: "menu_role_role_id_foreign")
@@ -1259,7 +1264,7 @@ model menus {
   created_at            DateTime?               @db.Timestamp(0)
   updated_at            DateTime?               @db.Timestamp(0)
   menu_role             menu_role[]
-  menus                 menus?                  @relation("menusTomenus", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "menus_parent_id_foreign")
+  menus                 menus?                  @relation("menusTomenus", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "menus_parent_id_foreign")
   other_menus           menus[]                 @relation("menusTomenus")
   user_menu_permissions user_menu_permissions[]
 
@@ -1276,7 +1281,7 @@ model model_has_permissions {
   permission_id BigInt      @db.UnsignedBigInt
   model_type    String      @db.VarChar(255)
   model_id      BigInt      @db.UnsignedBigInt
-  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_permissions_permission_id_foreign")
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "model_has_permissions_permission_id_foreign")
 
   @@id([permission_id, model_id, model_type])
   @@index([model_id, model_type], map: "model_has_permissions_model_id_model_type_index")
@@ -1286,7 +1291,7 @@ model model_has_roles {
   role_id    BigInt @db.UnsignedBigInt
   model_type String @db.VarChar(255)
   model_id   BigInt @db.UnsignedBigInt
-  roles      roles  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_roles_role_id_foreign")
+  roles      roles  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "model_has_roles_role_id_foreign")
 
   @@id([role_id, model_id, model_type])
   @@index([model_id, model_type], map: "model_has_roles_model_id_model_type_index")
@@ -1312,7 +1317,7 @@ model note_reasons {
   status           Int            @default(1)
   created_at       DateTime?      @db.Timestamp(0)
   updated_at       DateTime?      @db.Timestamp(0)
-  document_types   document_types @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "note_reasons_document_type_id_foreign")
+  document_types   document_types @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "note_reasons_document_type_id_foreign")
   sales            sales[]
 
   @@index([document_type_id], map: "note_reasons_document_type_id_foreign")
@@ -1412,7 +1417,7 @@ model petty_cash_motive {
   status       Boolean   @default(true)
   created_at   DateTime? @db.Timestamp(0)
   updated_at   DateTime? @db.Timestamp(0)
-  companies    companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "petty_cash_motive_company_id_foreign")
+  companies    companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "petty_cash_motive_company_id_foreign")
 
   @@index([company_id], map: "petty_cash_motive_company_id_foreign")
 }
@@ -1433,8 +1438,8 @@ model petty_cash_receipt {
   branch_id     BigInt    @db.UnsignedBigInt
   created_at    DateTime? @db.Timestamp(0)
   updated_at    DateTime? @db.Timestamp(0)
-  branches      branches  @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "petty_cash_receipt_branch_id_foreign")
-  companies     companies @relation(fields: [company_id], references: [id], onDelete: NoAction, map: "petty_cash_receipt_company_id_foreign")
+  branches      branches  @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "petty_cash_receipt_branch_id_foreign")
+  companies     companies @relation(fields: [company_id], references: [id], map: "petty_cash_receipt_company_id_foreign")
 
   @@unique([company_id, document_type, series, correlative], map: "company_id")
   @@index([branch_id], map: "petty_cash_receipt_branch_id_foreign")
@@ -1488,10 +1493,10 @@ model purchase {
   created_at               DateTime?                @db.Timestamp(0)
   updated_at               DateTime?                @db.Timestamp(0)
   detail_purchase_guides   detail_purchase_guides[]
-  branches                 branches                 @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchase_branch_id_foreign")
-  companies                companies                @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchase_company_id_foreign")
-  document_types           document_types           @relation(fields: [document_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchase_document_type_id")
-  payment_types            payment_types            @relation(fields: [payment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "purchase_payment_type_id_foreign")
+  branches                 branches                 @relation(fields: [branch_id], references: [id], onUpdate: Restrict, map: "purchase_branch_id_foreign")
+  companies                companies                @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "purchase_company_id_foreign")
+  document_types           document_types           @relation(fields: [document_type_id], references: [id], onUpdate: Restrict, map: "purchase_document_type_id")
+  payment_types            payment_types            @relation(fields: [payment_type_id], references: [id], onUpdate: Restrict, map: "purchase_payment_type_id_foreign")
   sc_voucherdet            sc_voucherdet[]
   shopping_income_guide    shopping_income_guide[]
 
@@ -1513,8 +1518,8 @@ model purchase_order_article {
   saldo             Int
   created_at        DateTime?       @db.Timestamp(0)
   updated_at        DateTime?       @db.Timestamp(0)
-  articles          articles        @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "purchase_order_article_article_id_foreign")
-  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "purchase_order_article_purchase_order_id_foreign")
+  articles          articles        @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_order_article_article_id_foreign")
+  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_order_article_purchase_order_id_foreign")
 
   @@index([article_id], map: "purchase_order_article_article_id_foreign")
   @@index([purchase_order_id], map: "purchase_order_article_purchase_order_id_foreign")
@@ -1548,11 +1553,11 @@ model purchase_orders {
   updated_at                     DateTime?                        @db.Timestamp(0)
   det_entry_guide_purchase_order det_entry_guide_purchase_order[]
   purchase_order_article         purchase_order_article[]
-  branches                       branches                         @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "purchase_orders_branch_id_foreign")
-  companies                      companies                        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "purchase_orders_company_id_foreign")
-  currency_types                 currency_types                   @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "purchase_orders_currency_type_id_foreign")
-  payment_types                  payment_types                    @relation(fields: [payment_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "purchase_orders_payment_type_id_foreign")
-  customers                      customers                        @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "purchase_orders_supplier_id_foreign")
+  branches                       branches                         @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_branch_id_foreign")
+  companies                      companies                        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_company_id_foreign")
+  currency_types                 currency_types                   @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_currency_type_id_foreign")
+  payment_types                  payment_types                    @relation(fields: [payment_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_payment_type_id_foreign")
+  customers                      customers                        @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "purchase_orders_supplier_id_foreign")
 
   @@index([branch_id], map: "purchase_orders_branch_id_foreign")
   @@index([company_id], map: "purchase_orders_company_id_foreign")
@@ -1587,8 +1592,8 @@ model reference_codes {
 model role_has_permissions {
   permission_id BigInt      @db.UnsignedBigInt
   role_id       BigInt      @db.UnsignedBigInt
-  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_permission_id_foreign")
-  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_role_id_foreign")
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "role_has_permissions_permission_id_foreign")
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "role_has_permissions_role_id_foreign")
 
   @@id([permission_id, role_id])
   @@index([role_id], map: "role_has_permissions_role_id_foreign")
@@ -1624,8 +1629,8 @@ model sale_article {
   sticbper       Int?      @default(0)
   created_at     DateTime? @db.Timestamp(0)
   updated_at     DateTime? @db.Timestamp(0)
-  articles       articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sale_article_article_id_foreign")
-  sales          sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sale_article_sale_id_foreign")
+  articles       articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_article_article_id_foreign")
+  sales          sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_article_sale_id_foreign")
 
   @@index([article_id], map: "sale_article_article_id_foreign")
   @@index([sale_id], map: "sale_article_sale_id_foreign")
@@ -1639,8 +1644,8 @@ model sale_item_serial {
   status     Boolean?  @default(true)
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
-  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sale_item_serial_article_id_foreign")
-  sales      sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sale_item_serial_sale_id_foreign")
+  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_item_serial_article_id_foreign")
+  sales      sales     @relation(fields: [sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sale_item_serial_sale_id_foreign")
 
   @@index([article_id], map: "sale_item_serial_article_id_foreign")
   @@index([sale_id], map: "sale_item_serial_sale_id_foreign")
@@ -1704,16 +1709,16 @@ model sales {
   installments                          installments[]
   sale_article                          sale_article[]
   sale_item_serial                      sale_item_serial[]
-  branches                              branches           @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_branch_id_foreign")
-  companies                             companies          @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_company_id_foreign")
-  currency_types                        currency_types     @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_currency_type_id_foreign")
-  customers                             customers          @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_customer_id_foreign")
-  document_types                        document_types     @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_document_type_id_foreign")
-  note_reasons                          note_reasons?      @relation(fields: [note_reason_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_note_reason_id_foreign")
-  payment_types                         payment_types      @relation(fields: [payment_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_payment_type_id_foreign")
-  users_sales_user_authorized_idTousers users?             @relation("sales_user_authorized_idTousers", fields: [user_authorized_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_user_authorized_id_foreign")
-  users_sales_user_idTousers            users              @relation("sales_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_user_id_foreign")
-  users_sales_user_sale_idTousers       users?             @relation("sales_user_sale_idTousers", fields: [user_sale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sales_user_sale_id_foreign")
+  branches                              branches           @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_branch_id_foreign")
+  companies                             companies          @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_company_id_foreign")
+  currency_types                        currency_types     @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_currency_type_id_foreign")
+  customers                             customers          @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_customer_id_foreign")
+  document_types                        document_types     @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_document_type_id_foreign")
+  note_reasons                          note_reasons?      @relation(fields: [note_reason_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_note_reason_id_foreign")
+  payment_types                         payment_types      @relation(fields: [payment_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_payment_type_id_foreign")
+  users_sales_user_authorized_idTousers users?             @relation("sales_user_authorized_idTousers", fields: [user_authorized_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_user_authorized_id_foreign")
+  users_sales_user_idTousers            users              @relation("sales_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_user_id_foreign")
+  users_sales_user_sale_idTousers       users?             @relation("sales_user_sale_idTousers", fields: [user_sale_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "sales_user_sale_id_foreign")
   warranties                            warranties[]
 
   @@unique([company_id, branch_id, document_type_id, serie, document_number], map: "company_id")
@@ -1792,10 +1797,10 @@ model sc_compras {
   CODIGO        Int             @default(0)
   TIPDOC        Int             @default(0)
   NUMDOC        String          @db.VarChar(12)
-  FECHA         DateTime?       @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECHA         DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
   DIAS          Int             @default(0) @db.SmallInt
-  FECVEN        DateTime?       @default(dbgenerated("'0000-00-00'")) @db.Date
-  FECCAN        DateTime?       @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECVEN        DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
+  FECCAN        DateTime?       @default(dbgenerated("('0000-00-00')")) @db.Date
   GLOSA         String          @db.VarChar(60)
   TIPMON        Int             @default(0) @db.SmallInt
   TIPCAM        Float           @default(0.0000) @db.Float
@@ -1806,10 +1811,10 @@ model sc_compras {
   SALDO         Float           @default(0.00)
   STDET         Int             @default(0)
   USRALT        Int             @default(0) @db.SmallInt
-  FECALT        DateTime?       @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECALT        DateTime?       @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRMOD        Int             @default(0) @db.SmallInt
-  FECMOD        DateTime?       @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
-  sc_tabcom     sc_tabcom       @relation(fields: [CIA, TIPCOM], references: [CIA, COD], onDelete: NoAction, onUpdate: NoAction, map: "sc_compras_ibfk_1")
+  FECMOD        DateTime?       @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
+  sc_tabcom     sc_tabcom       @relation(fields: [CIA, TIPCOM], references: [CIA, COD], onUpdate: Restrict, map: "sc_compras_ibfk_1")
   sc_comprasabo sc_comprasabo?
   sc_comprasadi sc_comprasadi?
   sc_comprasdet sc_comprasdet[]
@@ -1843,7 +1848,7 @@ model sc_comprasadi {
   NUMREF     String?    @db.VarChar(12)
   FECREF     DateTime?  @db.Date
   NROSPOT    String     @db.VarChar(10)
-  FECSPOT    DateTime?  @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECSPOT    DateTime?  @default(dbgenerated("('0000-00-00')")) @db.Date
   IMPSPOT    Decimal?   @default(0.00) @db.Decimal(12, 2)
   sc_compras sc_compras @relation(fields: [CIA, ANOPR, MESPR, COMP], references: [CIA, ANOPR, MESPR, COMP], onDelete: Cascade, map: "sc_comprasadi_ibfk_1")
 
@@ -1875,7 +1880,7 @@ model sc_glosas {
   MESPR  Int       @default(0) @db.SmallInt
   CODLIB Int       @default(0) @db.SmallInt
   COMP   Int       @default(0)
-  FECHA  DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECHA  DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
   TIPCAM Float?    @default(0.0000) @db.Float
   GLOSA  String?   @db.VarChar(120)
 
@@ -1889,7 +1894,7 @@ model sc_glosasnw {
   MESPR       Int           @default(0) @db.SmallInt
   CODLIB      Int           @default(0) @db.SmallInt
   COMP        Int           @default(0)
-  FECHA       DateTime?     @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECHA       DateTime?     @default(dbgenerated("('0000-00-00')")) @db.Date
   TIPCAM      Float?        @default(0.0000) @db.Float
   GLOSA       String?       @default("") @db.VarChar(120)
   sc_moviminw sc_moviminw[]
@@ -1906,7 +1911,7 @@ model sc_moviminw {
   COMP               Int                  @default(0)
   CORREL             Int                  @default(0) @db.SmallInt
   ORDEN              Int                  @default(0) @db.SmallInt
-  FECHA              DateTime?            @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECHA              DateTime?            @default(dbgenerated("('0000-00-00')")) @db.Date
   CUENTA             String?              @db.VarChar(8)
   CODCEN             Int                  @default(0) @db.SmallInt
   CODIGO             Int?                 @default(0)
@@ -1914,7 +1919,7 @@ model sc_moviminw {
   NUMDOC             String?              @db.VarChar(12)
   DOCREF             Int                  @default(0)
   NUMREF             String?              @db.VarChar(12)
-  FECVEN             DateTime?            @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECVEN             DateTime?            @default(dbgenerated("('0000-00-00')")) @db.Date
   GLOSA              String?              @db.VarChar(200)
   DH                 String?              @db.Char(1)
   TIPMON             Int                  @default(0)
@@ -1923,12 +1928,13 @@ model sc_moviminw {
   IMPDOL             Float?               @default(0.00)
   FLGAUT             Boolean              @default(false)
   USRALT             Int                  @default(0) @db.SmallInt
-  FECALT             DateTime?            @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECALT             DateTime?            @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRMOD             Int                  @default(0) @db.SmallInt
-  FECMOD             DateTime?            @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECMOD             DateTime?            @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   sc_glosasnw        sc_glosasnw          @relation(fields: [CIA, ANOPR, MESPR, CODLIB, COMP], references: [CIA, ANOPR, MESPR, CODLIB, COMP], onDelete: Cascade, map: "FK_sc_moviminw")
-  sc_plannw          sc_plannw?           @relation(fields: [CIA, CUENTA], references: [CIA, CUENTA], onDelete: NoAction, onUpdate: NoAction, map: "sc_moviminw_ibfk_1")
-
+  sc_plannw          sc_plannw?           @relation(fields: [CIA, CUENTA], references: [CIA, CUENTA], onUpdate: Restrict, map: "sc_moviminw_ibfk_1")
+  sc_moviminw_correl sc_moviminw_correl[]
+  @@unique([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL])
   @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN])
   @@index([CODLIB], map: "CODLIB")
   @@index([CIA, CUENTA], map: "IDX_jcmovimi_2")
@@ -1944,7 +1950,8 @@ model sc_moviminw_correl {
   COMP        Int         @default(0)
   CORREL      Int         @default(0) @db.SmallInt
   ORDEN       Int         @default(0) @db.SmallInt
-  COR_DIARIO  Int         @default(0) 
+  COR_DIARIO  Int         @default(0)
+  sc_moviminw sc_moviminw @relation(fields: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL], references: [CIA, ANOPR, MESPR, CODLIB, COMP, CORREL], onDelete: Cascade, map: "FK_sc_moviminw_correl")
 
   @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN, COR_DIARIO])
 }
@@ -2076,8 +2083,8 @@ model sc_ventas {
   TIPDOC       Int            @default(0) @db.SmallInt
   NUMDOC       String         @db.VarChar(12)
   CODIGO       Int            @default(0)
-  FECHA        DateTime?      @default(dbgenerated("'0000-00-00'")) @db.Date
-  FECVEN       DateTime?      @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECHA        DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
+  FECVEN       DateTime?      @default(dbgenerated("('0000-00-00')")) @db.Date
   GLOSA        String?        @db.VarChar(60)
   TIPMON       Int            @default(0) @db.SmallInt
   TIPCAM       Float          @default(0.0000) @db.Float
@@ -2091,11 +2098,11 @@ model sc_ventas {
   COMP         Int?           @default(0)
   ST           Int            @default(0) @db.SmallInt
   USRALT       Int            @default(0) @db.SmallInt
-  FECALT       DateTime?      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECALT       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRMOD       Int            @default(0) @db.SmallInt
-  FECMOD       DateTime?      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECMOD       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRANU       Int            @default(0) @db.SmallInt
-  FECANU       DateTime?      @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECANU       DateTime?      @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   sc_ventasdet sc_ventasdet[]
   sc_ventasexp sc_ventasexp?
 
@@ -2131,7 +2138,7 @@ model sc_ventasexp {
   SEGURO    Float     @default(0.00) @db.Float
   DOCREF    Int       @default(0)
   NUMREF    String?   @db.VarChar(12)
-  FECREF    DateTime  @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECREF    DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
   sc_ventas sc_ventas @relation(fields: [CIA, TIPDOC, NUMDOC], references: [CIA, TIPDOC, NUMDOC], onDelete: Cascade, map: "sc_ventasexp_ibfk_1")
 
   @@id([CIA, TIPDOC, NUMDOC])
@@ -2171,7 +2178,7 @@ model sc_voucher_nd {
   CIA              Int                @default(0)
   ANOPR            Int                @default(0) @db.SmallInt
   COMP             Int                @default(0)
-  FECHA            DateTime?          @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECHA            DateTime?          @default(dbgenerated("('0000-00-00')")) @db.Date
   CODBAN           Int                @default(0) @db.SmallInt
   CORREL           Int                @default(0) @db.SmallInt
   GLOSA            String?            @db.VarChar(120)
@@ -2181,11 +2188,11 @@ model sc_voucher_nd {
   ST               Int?               @default(0) @db.SmallInt
   MARCA            Int                @default(0) @db.SmallInt
   USRADI           Int                @default(0) @db.SmallInt
-  FECADI           DateTime?          @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECADI           DateTime?          @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRMOD           Int                @default(0) @db.SmallInt
-  FECMOD           DateTime?          @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECMOD           DateTime?          @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   USRANU           Int?               @default(0) @db.SmallInt
-  FECANU           DateTime?          @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECANU           DateTime?          @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
   sc_voucherdet_nd sc_voucherdet_nd[]
 
   @@id([CIA, ANOPR, COMP])
@@ -2228,7 +2235,7 @@ model sc_voucherdet {
   created_at    DateTime?   @db.Timestamp(0)
   updated_at    DateTime?   @db.Timestamp(0)
   sc_voucher    sc_voucher? @relation(fields: [id_sc_voucher], references: [id], onDelete: Cascade, map: "sc_voucherdet_ibfk_1")
-  purchase      purchase?   @relation(fields: [id_purchase], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sc_voucherdet_ibfk_2")
+  purchase      purchase?   @relation(fields: [id_purchase], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "sc_voucherdet_ibfk_2")
 
   @@index([id_purchase], map: "id_purchase")
   @@index([id_sc_voucher], map: "sc_voucherdet_cia_foreign")
@@ -2266,8 +2273,8 @@ model series {
   status                Int       @default(1)
   created_at            DateTime? @db.Timestamp(0)
   updated_at            DateTime? @db.Timestamp(0)
-  branches              branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "series_branch_id_foreign")
-  companies             companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "series_company_id_foreign")
+  branches              branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "series_branch_id_foreign")
+  companies             companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "series_company_id_foreign")
 
   @@index([branch_id], map: "series_branch_id_foreign")
   @@index([company_id], map: "series_company_id_foreign")
@@ -2305,8 +2312,8 @@ model sire_propuesta_rce {
   razon_social_contribuyente String?   @db.VarChar(250)
   periodo                    String    @db.VarChar(6)
   codcar                     String    @db.VarChar(27)
-  fecha_emision              DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
-  fecha_vencimiento          DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  fecha_emision              DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  fecha_vencimiento          DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
   tipo_cp                    String?   @default("") @db.VarChar(2)
   serie_cpd                  String?   @default("") @db.VarChar(20)
   annio                      String?   @default("") @db.VarChar(4)
@@ -2328,7 +2335,7 @@ model sire_propuesta_rce {
   total_cp                   Decimal?  @default(0.00) @db.Decimal(12, 2)
   moneda                     String?   @default("") @db.VarChar(3)
   tipo_cambio                String?   @default("") @db.VarChar(13)
-  fec_emision_doc_mod        DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  fec_emision_doc_mod        DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
   tipo_cp_modificado         String?   @default("") @db.VarChar(2)
   serie_cp_modificado        String?   @default("") @db.VarChar(20)
   cod_dam_dsi                String?   @default("") @db.VarChar(3)
@@ -2353,8 +2360,8 @@ model sire_propuesta_rvie {
   razon_social_contribuyente String?   @db.VarChar(250)
   periodo                    String    @db.VarChar(6)
   codcar                     String    @db.VarChar(27)
-  fecha_emision              DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
-  fecha_vencimiento          DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  fecha_emision              DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  fecha_vencimiento          DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
   tipo_cp                    String?   @default("") @db.VarChar(2)
   serie_cpd                  String?   @default("") @db.VarChar(20)
   nro_cp_inicial             String?   @default("") @db.VarChar(20)
@@ -2377,7 +2384,7 @@ model sire_propuesta_rvie {
   total_cp                   Decimal?  @default(0.00) @db.Decimal(12, 2)
   moneda                     String?   @default("") @db.VarChar(3)
   tipo_cambio                Decimal?  @default(0.000) @db.Decimal(12, 3)
-  fec_emision_doc_mod        DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  fec_emision_doc_mod        DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
   tipo_cp_modificado         String?   @default("") @db.VarChar(2)
   serie_cp_modificado        String?   @default("") @db.VarChar(20)
   nro_cp_modificado          String?   @default("") @db.VarChar(20)
@@ -2409,9 +2416,10 @@ model sub_categories {
   created_at  DateTime?  @db.Timestamp(0)
   updated_at  DateTime?  @db.Timestamp(0)
   image_url   String?    @db.VarChar(255)
-  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign")
-
+  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign") 
+  articles    articles[]  
   @@index([category_id], map: "sub_categories_category_id_foreign")
+
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -2438,8 +2446,8 @@ model tabcia1 {
   CODIGO    Int?      @default(0)
   CAMBIO    Float?    @default(0.000) @db.Float
   TIPMON    String?   @db.Char(1)
-  VIGENCIA  DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
-  FECINI    DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  VIGENCIA  DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
+  FECINI    DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
   NROCLI    Int?      @default(0)
   CTAIGV    String?   @default("0.00") @db.VarChar(8)
   CTARTA    String?   @db.VarChar(8)
@@ -2614,7 +2622,7 @@ model tmpdiario {
   COMP   Int       @default(0)
   CORREL Int       @default(0) @db.SmallInt
   ORDEN  Int       @default(0) @db.SmallInt
-  FECHA  DateTime  @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECHA  DateTime  @default(dbgenerated("('0000-00-00')")) @db.Date
   CUENTA String?   @db.VarChar(8)
   CODCEN Int       @default(0) @db.SmallInt
   CODIGO Float?    @default(0)
@@ -2623,7 +2631,7 @@ model tmpdiario {
   NUMDOC String?   @db.VarChar(8)
   DOCREF Int       @default(0)
   NUMREF String?   @db.VarChar(12)
-  FECVEN DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  FECVEN DateTime? @default(dbgenerated("('0000-00-00')")) @db.Date
   GLOSA  String?   @db.VarChar(60)
   DH     String?   @db.Char(1)
   TIPMON Int       @default(0)
@@ -2651,11 +2659,11 @@ model transaction_logs {
   user_agent       String?         @db.Text
   created_at       DateTime?       @db.Timestamp(0)
   updated_at       DateTime?       @db.Timestamp(0)
-  branches         branches?       @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "transaction_logs_branch_id_foreign")
-  companies        companies       @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "transaction_logs_company_id_foreign")
-  document_types   document_types? @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "transaction_logs_document_type_id_foreign")
-  roles            roles           @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "transaction_logs_role_id_foreign")
-  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "transaction_logs_user_id_foreign")
+  branches         branches?       @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_branch_id_foreign")
+  companies        companies       @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_company_id_foreign")
+  document_types   document_types? @relation(fields: [document_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_document_type_id_foreign")
+  roles            roles           @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_role_id_foreign")
+  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "transaction_logs_user_id_foreign")
 
   @@index([branch_id], map: "transaction_logs_branch_id_foreign")
   @@index([company_id], map: "transaction_logs_company_id_foreign")
@@ -2681,7 +2689,7 @@ model transport_companies {
 model updateexe {
   COD     Int      @id @default(0)
   ARCHIVO Bytes
-  FECHA   DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  FECHA   DateTime @default(dbgenerated("('0000-00-00 00:00:00')")) @db.DateTime(0)
 }
 
 model user_assignments {
@@ -2692,9 +2700,9 @@ model user_assignments {
   status     Int       @default(1)
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
-  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_assignments_branch_id_foreign")
-  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_assignments_company_id_foreign")
-  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_assignments_user_id_foreign")
+  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_assignments_branch_id_foreign")
+  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_assignments_company_id_foreign")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_assignments_user_id_foreign")
 
   @@unique([user_id, company_id, branch_id], map: "user_assignments_user_id_company_id_branch_id_unique")
   @@index([branch_id], map: "user_assignments_branch_id_foreign")
@@ -2708,9 +2716,9 @@ model user_menu_permissions {
   menu_id    BigInt    @db.UnsignedBigInt
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
-  menus      menus     @relation(fields: [menu_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_menu_permissions_menu_id_foreign")
-  roles      roles     @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_menu_permissions_role_id_foreign")
-  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_menu_permissions_user_id_foreign")
+  menus      menus     @relation(fields: [menu_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_menu_permissions_menu_id_foreign")
+  roles      roles     @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_menu_permissions_role_id_foreign")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_menu_permissions_user_id_foreign")
 
   @@index([menu_id], map: "user_menu_permissions_menu_id_foreign")
   @@index([role_id], map: "user_menu_permissions_role_id_foreign")
@@ -2753,10 +2761,10 @@ model visible_articles {
   status     Boolean   @default(true)
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
-  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "visible_articles_article_id_foreign")
-  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "visible_articles_branch_id_foreign")
-  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "visible_articles_company_id_foreign")
-  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "visible_articles_user_id_foreign")
+  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_article_id_foreign")
+  branches   branches  @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_branch_id_foreign")
+  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_company_id_foreign")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "visible_articles_user_id_foreign")
 
   @@index([article_id], map: "visible_articles_article_id_foreign")
   @@index([branch_id], map: "visible_articles_branch_id_foreign")
@@ -2801,16 +2809,16 @@ model warranties {
   created_at                                   DateTime?          @db.DateTime(0)
   updated_At                                   DateTime?          @db.DateTime(0)
   contact_id                                   BigInt?            @db.UnsignedBigInt
-  articles                                     articles?          @relation(fields: [article_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "article_id_foreign")
-  branches_warranties_branch_idTobranches      branches           @relation("warranties_branch_idTobranches", fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "branch_id_foreign")
-  branches_warranties_branch_sale_idTobranches branches?          @relation("warranties_branch_sale_idTobranches", fields: [branch_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "branch_sale_id_foreign")
-  companies                                    companies          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "company_id_foreign")
-  customers_warranties_contact_idTocustomers   customers?         @relation("warranties_contact_idTocustomers", fields: [contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "contact_id_foreign")
-  customers_warranties_customer_idTocustomers  customers?         @relation("warranties_customer_idTocustomers", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "customer_id_foreign")
-  entry_guides                                 entry_guides?      @relation(fields: [entry_guide_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entry_guide_id_foreign")
-  sales                                        sales?             @relation(fields: [reference_sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reference_sale_id_foreign")
-  customers_warranties_supplier_idTocustomers  customers?         @relation("warranties_supplier_idTocustomers", fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "supplier_id_foreign")
-  warranty_statuses                            warranty_statuses? @relation(fields: [warranty_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "warranty_status_id_foreign")
+  articles                                     articles?          @relation(fields: [article_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "article_id_foreign")
+  branches_warranties_branch_idTobranches      branches           @relation("warranties_branch_idTobranches", fields: [branch_id], references: [id], onUpdate: Restrict, map: "branch_id_foreign")
+  branches_warranties_branch_sale_idTobranches branches?          @relation("warranties_branch_sale_idTobranches", fields: [branch_sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "branch_sale_id_foreign")
+  companies                                    companies          @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "company_id_foreign")
+  customers_warranties_contact_idTocustomers   customers?         @relation("warranties_contact_idTocustomers", fields: [contact_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "contact_id_foreign")
+  customers_warranties_customer_idTocustomers  customers?         @relation("warranties_customer_idTocustomers", fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "customer_id_foreign")
+  entry_guides                                 entry_guides?      @relation(fields: [entry_guide_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "entry_guide_id_foreign")
+  sales                                        sales?             @relation(fields: [reference_sale_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "reference_sale_id_foreign")
+  customers_warranties_supplier_idTocustomers  customers?         @relation("warranties_supplier_idTocustomers", fields: [supplier_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "supplier_id_foreign")
+  warranty_statuses                            warranty_statuses? @relation(fields: [warranty_status_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "warranty_status_id_foreign")
 
   @@unique([company_id, branch_id, document_type_warranty_id, serie, correlative], map: "company_id")
   @@index([article_id], map: "article_id_foreign")
@@ -2851,8 +2859,8 @@ model order_items {
   unit_price Decimal  @db.Decimal(10, 2)
   subtotal   Decimal  @db.Decimal(10, 2)
   created_at DateTime @default(now()) @db.Timestamp(0)
-  orders     orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "order_items_ibfk_1")
-  articles   articles @relation(fields: [article_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_items_ibfk_2")
+  orders     orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_1")
+  articles   articles @relation(fields: [article_id], references: [id], onUpdate: Restrict, map: "order_items_ibfk_2")
 
   @@index([article_id], map: "idx_order_items_article_id")
   @@index([order_id], map: "idx_order_items_order_id")
@@ -2869,8 +2877,8 @@ model orders {
   created_at       DateTime        @default(now()) @db.Timestamp(0)
   notifications    notifications[]
   order_items      order_items[]
-  clients          clients         @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_orders_client")
-  document_types   document_types? @relation(fields: [document_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_document_type")
+  clients          clients         @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_orders_client")
+  document_types   document_types? @relation(fields: [document_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_orders_document_type")
 
   @@index([client_id], map: "fk_orders_client")
   @@index([sale_id], map: "orders_sale_id_index")
@@ -2885,7 +2893,7 @@ model notifications {
   read_at    DateTime? @db.Timestamp(0)
   deleted_at DateTime? @db.DateTime(0)
   created_at DateTime  @default(now()) @db.Timestamp(0)
-  orders     orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notifications_order_id_foreign")
+  orders     orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notifications_order_id_foreign")
 
   @@index([order_id], map: "idx_notifications_order")
 }
@@ -2912,8 +2920,8 @@ model pdf_bank_accounts {
   status           Int            @default(1)
   created_at       DateTime?      @db.Timestamp(0)
   updated_at       DateTime?      @db.Timestamp(0)
-  companies        companies      @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pdf_bank_accounts_company_id_foreign")
-  currency_types   currency_types @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pdf_bank_accounts_currency_type_id_foreign")
+  companies        companies      @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pdf_bank_accounts_company_id_foreign")
+  currency_types   currency_types @relation(fields: [currency_type_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pdf_bank_accounts_currency_type_id_foreign")
 
   @@index([company_id], map: "pdf_bank_accounts_company_id_index")
   @@index([currency_type_id], map: "pdf_bank_accounts_currency_type_id_foreign")
@@ -2927,7 +2935,7 @@ model pdf_digital_wallets {
   status     Int       @default(1)
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
-  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pdf_digital_wallets_company_id_foreign")
+  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "pdf_digital_wallets_company_id_foreign")
 
   @@index([company_id], map: "pdf_digital_wallets_company_id_index")
 }
@@ -2960,7 +2968,7 @@ model complaints {
   status            complaints_status         @default(pendiente)
   date_complaint    DateTime                  @db.Date
   created_at        DateTime                  @default(now()) @db.Timestamp(0)
-  clients           clients?                  @relation(fields: [customer_id], references: [id], onUpdate: NoAction, map: "fk_complaints_customer")
+  clients           clients?                  @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "fk_complaints_customer")
 
   @@index([customer_id], map: "idx_complaints_customer_id")
   @@index([status], map: "idx_complaints_status")

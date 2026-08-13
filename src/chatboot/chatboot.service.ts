@@ -455,6 +455,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
       const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
 
       const formattedProducts = articles.map((article: any) => {
+        const slug = article.slug
         const id = Number(article.id);
         const nombre = article.description || '';
         const mainImageObj = article.article_images?.[0];
@@ -472,7 +473,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
           imagen: this.formatImageUrl(rawImgUrl),
           marca: article.brands?.name || null,
           categoria: article.categories?.name || null,
-          ruta: this.formatProductRoute(id),
+          ruta: this.formatProductRoute(slug),
         };
       });
 
@@ -637,10 +638,10 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
     return significant.length > 0 ? significant.join(' ') : null;
   }
 
-  private formatProductRoute(id: number): string {
+  private formatProductRoute(slug: string): string {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://192.168.18.35:3000/';
     const cleanFrontendUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
-    return `${cleanFrontendUrl}/productos/${id}`;
+    return `${cleanFrontendUrl}/productos/${slug}`;
   }
 
   private formatImageUrl(path: string | null): string | null {
