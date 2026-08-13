@@ -92,22 +92,22 @@ export class AuthService {
       10,
     );
 
-    // const response = await this.httpService.axiosRef.get(
-    //     `${process.env.EXTERNAL_API_URL}/${dto?.document_number}`,
-    //     {
-    //       headers: {
-    //         Authorization: `Bearer ${process.env.PUBLICTOKEN}`,
-    //       },
-    //          validateStatus: () => true,
-    //     },
+    const response = await this.httpService.axiosRef.get(
+        `${process.env.EXTERNAL_API_URL}/${dto?.document_number}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PUBLICTOKEN}`,
+          },
+             validateStatus: () => true,
+        },
         
-    //   );
-      //  console.log("estado",response.status)  
-      // if (dto.document_number !== "" ) {
-      //     if (response?.status === 404) throw new UnauthorizedException('El dni no es correcto')   
-      //     if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')     
-      //    if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')
-      // }
+      );
+       console.log("estado",response.status)  
+      if (dto.document_number !== "" ) {
+          if (response?.status === 404) throw new UnauthorizedException('El dni no es correcto')   
+          if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')     
+         if (!response?.data?.success  ) throw new BadRequestException('El dni no es correcto')
+      }
 
   const client =
     await this.clientsService.create({
