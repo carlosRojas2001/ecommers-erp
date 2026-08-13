@@ -23,10 +23,11 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@Query('id') id?: string) {
-    return this.ordersService.findAll(id);
+  findAll(@Query('id') id: string, @GetClient() user: any) {
+    const isAdmin = user.role === 'admin';
+    return this.ordersService.findAll(id, user.id, isAdmin);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -132,8 +132,14 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     return totales;
 }
 
-  async findAll(id?: string) {
-  const idFilter = id ? Prisma.sql`WHERE c.id = ${BigInt(id)}` : Prisma.sql``;
+  async findAll(id?: string, userId?: number | string, isAdmin = false) {
+  let idFilter = Prisma.sql``;
+
+  if (id) {
+    idFilter = Prisma.sql`WHERE c.id = ${BigInt(id)}`;
+  } else if (!isAdmin && userId !== undefined) {
+    idFilter = Prisma.sql`WHERE c.id = ${BigInt(String(userId))}`;
+  }
 
   const order = await this.prisma.$queryRaw<any[]>`
     SELECT
@@ -288,6 +294,7 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
           'quantity', oi.quantity,
           'unit_price', oi.unit_price,
           'subtotal', oi.subtotal,
+          'currency_type_id', a.currency_type_id,
           'article_description', a.description
         )
       ) AS items

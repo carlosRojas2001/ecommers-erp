@@ -35,7 +35,7 @@ export class ChatbootService {
    */
   async chat(userMessage: string) {
     console.log('=== CHATBOT: Nueva consulta ===');
-
+  //  return this.findProducts({ page:1, limit:615 })
     // Pre-validaciones rápidas para evitar consumo innecesario de tokens
     const cleanMsg = (userMessage || '').toLowerCase().trim().replace(/[?¡!.,]/g, '');
 
@@ -459,13 +459,13 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
         const id = Number(article.id);
         const nombre = article.description || '';
         const mainImageObj = article.article_images?.[0];
-        const rawImgUrl = mainImageObj ? mainImageObj.url : (article.image_url || null);
+        const rawImgUrl = mainImageObj ? mainImageObj.url : null;
         const rawPrice = article.public_price ? Number(article.public_price) : 0;
         const isDollars = article.currency_type_id?.toString() === '2';
         const precioSoles = isDollars && dollarRate > 0
           ? Number((rawPrice * dollarRate).toFixed(2))
           : Number(rawPrice.toFixed(2));
-
+    
         return {
           id,
           nombre,
@@ -476,7 +476,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
           ruta: this.formatProductRoute(slug),
         };
       });
-
+      
       return { products: formattedProducts, total };
     };
 
