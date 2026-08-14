@@ -136,6 +136,9 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
   let idFilter = Prisma.sql``;
 
   if (id) {
+    if (!isAdmin && userId !== undefined && String(id) !== String(userId)) {
+      throw new ForbiddenException('No tienes permiso para acceder a estas órdenes');
+    }
     idFilter = Prisma.sql`WHERE c.id = ${BigInt(id)}`;
   } else if (!isAdmin && userId !== undefined) {
     idFilter = Prisma.sql`WHERE c.id = ${BigInt(String(userId))}`;
