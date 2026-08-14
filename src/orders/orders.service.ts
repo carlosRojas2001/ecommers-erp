@@ -107,14 +107,16 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
         const isSoles = String(article?.currency_type_id) === '1';
         return {
           ...item,
-          unit_price_soles: isSoles ? Number(item.unit_price) : Number(item.unit_price) * dollarRate,
-          subtotal_soles: isSoles ? Number(item.subtotal) : Number(item.subtotal) * dollarRate,
+          unit_price: isSoles ? Number(item.unit_price) : Number(item.unit_price) * dollarRate,
+          subtotal: isSoles ? Number(item.subtotal) : Number(item.subtotal) * dollarRate,
         };
       })
     );
 
+    const totalSoles = itemsEnSoles.reduce((sum, item) => sum + item.subtotal, 0);
+
     return {
-      orders: { ...orders, item_irderns: itemsEnSoles },
+      orders: { ...orders, total: totalSoles, item_irderns: itemsEnSoles },
     };
   }).then(async (result) => {
     const notification = await this.prisma.notifications.findFirst({
