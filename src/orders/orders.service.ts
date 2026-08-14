@@ -98,6 +98,8 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     await this.notificationsService.createNew(orders.id, undefined, tx);
 
     const dollarRate = await this.getDollarRate();
+    console.log('[DEBUG CREATE] dollarRate:', dollarRate);
+    
     const itemsEnSoles = await Promise.all(
       item_irderns.map(async (item: any) => {
         const article = await tx.articles.findUnique({
@@ -105,6 +107,13 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
           select: { currency_type_id: true },
         });
         const isSoles = String(article?.currency_type_id) === '1';
+        console.log('[DEBUG CREATE] item:', {
+          article_id: item.article_id,
+          currency_type_id: article?.currency_type_id,
+          isSoles,
+          unit_price_original: item.unit_price,
+          unit_price_convertido: isSoles ? Number(item.unit_price) : Number(item.unit_price) * dollarRate,
+        });
         return {
           ...item,
           unit_price: isSoles ? Number(item.unit_price) : Number(item.unit_price) * dollarRate,
@@ -114,6 +123,7 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     );
 
     const totalSoles = itemsEnSoles.reduce((sum, item) => sum + item.subtotal, 0);
+    console.log('[DEBUG CREATE] totalSoles:', totalSoles);
 
     return {
       orders: { ...orders, total: totalSoles, item_irderns: itemsEnSoles },
