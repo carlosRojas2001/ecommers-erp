@@ -7,14 +7,16 @@ El módulo de **Órdenes** gestiona la creación de pedidos y la generación de 
 
 ## Endpoints
 
+> **Prefijo global:** todas las rutas del backend se sirven bajo `/api` (ej. `http://localhost:3000/api/orders`).
+
 | Método | Ruta | Descripción | Autenticación |
 |--------|------|-------------|---------------|
-| `POST` | `/orders` | Crear nueva orden | JWT |
-| `GET` | `/orders` | Listar todas las órdenes | No |
-| `GET` | `/orders/:id` | Obtener orden por ID | No |
-| `GET` | `/orders/detalle/:id` | Detalle completo de orden | No |
-| `GET` | `/orders/pdf/:id` | Generar PDF de la orden | No |
-| `GET` | `/orders/mas-vendidos-productos` | Productos más vendidos | No |
+| `POST` | `/api/orders` | Crear nueva orden | JWT |
+| `GET` | `/api/orders` | Listar órdenes (del cliente autenticado o todas si es admin). `?id={client_id}` filtra por cliente | JWT |
+| `GET` | `/api/orders/:id` | Obtener orden por ID (dueño o admin) | JWT |
+| `GET` | `/api/orders/detalle/:id` | Detalle completo de orden (dueño o admin) | JWT |
+| `GET` | `/api/orders/pdf/:id` | Generar PDF de la orden (dueño o admin) | JWT |
+| `GET` | `/api/orders/mas-vendidos-productos` | Productos más vendidos (agregación global, sin datos de clientes) | No |
 
 ---
 
@@ -23,7 +25,7 @@ El módulo de **Órdenes** gestiona la creación de pedidos y la generación de 
 ### Endpoint
 
 ```
-POST /orders
+POST /api/orders
 ```
 
 ### Headers
@@ -61,7 +63,7 @@ Authorization: Bearer {token}
 ### Crear Factura
 
 ```bash
-curl -X POST http://localhost:3000/orders \
+curl -X POST http://localhost:3000/api/orders \
   -H "Authorization: Bearer TU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -83,7 +85,7 @@ curl -X POST http://localhost:3000/orders \
 ### Crear Boleta
 
 ```bash
-curl -X POST http://localhost:3000/orders \
+curl -X POST http://localhost:3000/api/orders \
   -H "Authorization: Bearer TU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -101,6 +103,8 @@ curl -X POST http://localhost:3000/orders \
 ---
 
 ## Respuesta Exitosa
+
+> **Nota de moneda:** Tanto el `total` como los precios de cada ítem (`unit_price` y `subtotal`) **siempre se devuelven en Soles (PEN)**. Si un artículo está en dólares, el backend aplica la tasa de cambio del día automáticamente. El `total` almacenado en la base de datos también se guarda en Soles.
 
 ```json
 {
@@ -160,9 +164,12 @@ curl -X POST http://localhost:3000/orders \
 ### Endpoint
 
 ```
-GET /orders
-GET /orders?id=123
+GET /api/orders
+GET /api/orders?id=123
 ```
+
+> **Autenticación:** requiere JWT. Un cliente solo ve sus propias órdenes; un admin (`role === 'admin'`) ve todas o filtra por cliente con `?id={client_id}`.
+> **Orden:** las órdenes se devuelven de la más reciente a la más antigua (`created_at DESC`).
 
 ### Parámetros opcionales
 
@@ -204,13 +211,13 @@ GET /orders?id=123
 ### Endpoint
 
 ```
-GET /orders/:id
+GET /api/orders/:id
 ```
 
 ### Ejemplo
 
 ```bash
-curl http://localhost:3000/orders/1
+curl http://localhost:3000/api/orders/1
 ```
 
 ### Respuesta
@@ -234,14 +241,16 @@ curl http://localhost:3000/orders/1
 ### Endpoint
 
 ```
-GET /orders/detalle/:id
+GET /api/orders/detalle/:id
 ```
 
 ### Ejemplo
 
 ```bash
-curl http://localhost:3000/orders/detalle/1
+curl http://localhost:3000/api/orders/detalle/1
 ```
+
+> **Nota de moneda:** Los montos (`unit_price`, `subtotal` y `total`) **siempre se devuelven en Soles (PEN)**. Si un artículo está en dólares, el backend convierte usando la tasa de cambio del día (mismo comportamiento que `GET /orders`). Cada ítem incluye `currency_type_id` (moneda original del artículo).
 
 ### Respuesta
 
@@ -260,6 +269,7 @@ curl http://localhost:3000/orders/detalle/1
       "quantity": 2,
       "unit_price": 1500.00,
       "subtotal": 3000.00,
+      "currency_type_id": 1,
       "article_description": "Laptop HP Pavilion"
     }
   ]
@@ -273,14 +283,14 @@ curl http://localhost:3000/orders/detalle/1
 ### Endpoint
 
 ```
-GET /orders/pdf/:id
+GET /api/orders/pdf/:id
 ```
 
 ### Ejemplo
 
 ```bash
 # Descargar PDF
-curl http://localhost:3000/orders/pdf/1 -o orden-1.pdf
+curl http://localhost:3000/api/orders/pdf/1 -o orden-1.pdf
 ```
 
 ### Respuesta
@@ -294,13 +304,13 @@ curl http://localhost:3000/orders/pdf/1 -o orden-1.pdf
 ### Endpoint
 
 ```
-GET /orders/mas-vendidos-productos
+GET /api/orders/mas-vendidos-productos
 ```
 
 ### Ejemplo
 
 ```bash
-curl http://localhost:3000/orders/mas-vendidos-productos
+curl http://localhost:3000/api/orders/mas-vendidos-productos
 ```
 
 ### Respuesta
@@ -345,20 +355,20 @@ El sistema soporta múltiples monedas:
 
 ```
 1. Registrar cliente (si no existe)
-   POST /clients
+   POST /api/clients
    - Para factura: registrar con RUC (11 dígitos)
    - Para boleta: registrar con DNI (8 dígitos)
 
 2. (Opcional) Verificar RUC en SUNAT
-   GET /consulta/sunat/{ruc}
+   GET /api/consulta/sunat/{ruc}
 
 3. Crear orden
-   POST /orders
+   POST /api/orders
    - document_type_id: 1 (factura) o 3 (boleta)
    - Enviar items con article_id y quantity
 
 4. Obtener comprobante
-   GET /orders/pdf/{id}
+   GET /api/orders/pdf/{id}
 ```
 
 ---
@@ -398,7 +408,7 @@ El endpoint `GET /api/orders-web/{id}/to-sale` del ERP retorna un payload con:
 ```javascript
 // Crear una factura
 const crearFactura = async () => {
-  const response = await fetch('http://localhost:3000/orders', {
+  const response = await fetch('http://localhost:3000/api/orders', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -420,7 +430,7 @@ const crearFactura = async () => {
 
 // Crear una boleta
 const crearBoleta = async () => {
-  const response = await fetch('http://localhost:3000/orders', {
+  const response = await fetch('http://localhost:3000/api/orders', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

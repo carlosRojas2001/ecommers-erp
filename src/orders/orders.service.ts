@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
@@ -10,7 +15,6 @@ import * as path from 'path';
 
 @Injectable()
 export class OrdersService {
-
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
@@ -25,124 +29,141 @@ export class OrdersService {
     return exchangeRate ? Number(exchangeRate.sale_rate) : 0;
   }
 
-  private toSoles(value: unknown, currencyTypeId: unknown, dollarRate: number): number {
+  private toSoles(
+    value: unknown,
+    currencyTypeId: unknown,
+    dollarRate: number,
+  ): number {
     const amount = Number(value) || 0;
-    return String(currencyTypeId) === '1'
-      ? amount
-      : amount * dollarRate;
-  }  
-
-async create(createOrderDto: CreateOrderDto) {
-
-  if (!createOrderDto.document_type_id) {
-    throw new UnauthorizedException('Debes indicar si es boleta o factura');
+    return String(currencyTypeId) === '1' ? amount : amount * dollarRate;
   }
 
-  const totales = await this.calculateTotales(createOrderDto);
-
-  return this.prisma.$transaction(async (tx) => {
-    const orders = await tx.orders.create({
-      data: {
-        client_id: createOrderDto.client_id,
-        document_type_id: createOrderDto.document_type_id,
-        status: 'pending',
-        total: totales,
-      },
-      include: {
-        clients: true,
-        document_types: true,
-      },
-    });
-
-    if (orders?.clients?.document_number == "") {
-      throw new UnauthorizedException('Debes tener registro de dni');
+  async create(createOrderDto: CreateOrderDto) {
+    if (!createOrderDto.document_type_id) {
+      throw new UnauthorizedException('Debes indicar si es boleta o factura');
     }
 
-    // cod_sunat 1 = factura (requiere RUC de 11 dígitos)
-    // cod_sunat 3 = boleta (requiere DNI de 8 dígitos)
-if (Number(orders.document_type_id) === 1 && orders?.clients?.document_number?.length !== 11) {
-  throw new UnauthorizedException('Para facturar necesitas registrar tu RUC (11 dígitos)');
-}
+    const totales = await this.calculateTotales(createOrderDto);
 
-if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.length !== 8) {
-  throw new UnauthorizedException('Para boleta necesitas registrar tu DNI (8 dígitos)');
-}
-
-    const item_irderns = await Promise.all(
-      createOrderDto.items.map(async (item: any) => {
-        const article = await tx.articles.findUnique({
-          where: {
-            id: item.article_id,
-          },
-        });
-        const unit_price = article?.public_price;
-        const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
-
-        return tx.order_items.create({
+    return this.prisma
+      .$transaction(async (tx) => {
+        const orders = await tx.orders.create({
           data: {
-            quantity: item.quantity,
-            unit_price: unit_price || 0,
-            subtotal: subtotal,
-
-            orders: {
-              connect: { id: orders.id, },
-            },
-            articles: {
-              connect: { id: item.article_id },
-            },
+            client_id: createOrderDto.client_id,
+            document_type_id: createOrderDto.document_type_id,
+            status: 'pending',
+            total: totales,
+          },
+          include: {
+            clients: true,
+            document_types: true,
           },
         });
-      }),
-    );
 
-    await this.notificationsService.createNew(orders.id, undefined, tx);
+        if (orders?.clients?.document_number == '') {
+          throw new UnauthorizedException('Debes tener registro de dni');
+        }
 
-    const dollarRate = await this.getDollarRate();
-    console.log('[DEBUG CREATE] dollarRate:', dollarRate);
-    
-    const itemsEnSoles = await Promise.all(
-      item_irderns.map(async (item: any) => {
-        const article = await tx.articles.findUnique({
-          where: { id: item.article_id },
-          select: { currency_type_id: true },
-        });
-        const isSoles = String(article?.currency_type_id) === '1';
-        console.log('[DEBUG CREATE] item:', {
-          article_id: item.article_id,
-          currency_type_id: article?.currency_type_id,
-          isSoles,
-          unit_price_original: item.unit_price,
-          unit_price_convertido: isSoles ? Number(item.unit_price) : Number(item.unit_price) * dollarRate,
-        });
+        // cod_sunat 1 = factura (requiere RUC de 11 dígitos)
+        // cod_sunat 3 = boleta (requiere DNI de 8 dígitos)
+        if (
+          Number(orders.document_type_id) === 1 &&
+          orders?.clients?.document_number?.length !== 11
+        ) {
+          throw new UnauthorizedException(
+            'Para facturar necesitas registrar tu RUC (11 dígitos)',
+          );
+        }
+
+        if (
+          Number(orders.document_type_id) === 3 &&
+          orders?.clients?.document_number?.length !== 8
+        ) {
+          throw new UnauthorizedException(
+            'Para boleta necesitas registrar tu DNI (8 dígitos)',
+          );
+        }
+
+        const item_irderns = await Promise.all(
+          createOrderDto.items.map(async (item: any) => {
+            const article = await tx.articles.findUnique({
+              where: {
+                id: item.article_id,
+              },
+            });
+            const unit_price = article?.public_price;
+            const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
+
+            return tx.order_items.create({
+              data: {
+                quantity: item.quantity,
+                unit_price: unit_price || 0,
+                subtotal: subtotal,
+
+                orders: {
+                  connect: { id: orders.id },
+                },
+                articles: {
+                  connect: { id: item.article_id },
+                },
+              },
+            });
+          }),
+        );
+
+        await this.notificationsService.createNew(orders.id, undefined, tx);
+
+        const dollarRate = await this.getDollarRate();
+
+        const itemsEnSoles = await Promise.all(
+          item_irderns.map(async (item: any) => {
+            const article = await tx.articles.findUnique({
+              where: { id: item.article_id },
+              select: { currency_type_id: true },
+            });
+            const isSoles = String(article?.currency_type_id) === '1';
+            return {
+              ...item,
+              unit_price: isSoles
+                ? Number(item.unit_price)
+                : Number(item.unit_price) * dollarRate,
+              subtotal: isSoles
+                ? Number(item.subtotal)
+                : Number(item.subtotal) * dollarRate,
+            };
+          }),
+        );
+
+        const totalSoles = itemsEnSoles.reduce(
+          (sum, item) => sum + item.subtotal,
+          0,
+        );
+
         return {
-          ...item,
-          unit_price: isSoles ? Number(item.unit_price) : Number(item.unit_price) * dollarRate,
-          subtotal: isSoles ? Number(item.subtotal) : Number(item.subtotal) * dollarRate,
+          orders: { ...orders, total: totalSoles, item_irderns: itemsEnSoles },
         };
       })
-    );
+      .then(async (result) => {
+        const notification = await this.prisma.notifications.findFirst({
+          where: { order_id: result.orders.id, type: 'nuevo' },
+          orderBy: { id: 'desc' },
+          select: { id: true },
+        });
 
-    const totalSoles = itemsEnSoles.reduce((sum, item) => sum + item.subtotal, 0);
-    console.log('[DEBUG CREATE] totalSoles:', totalSoles);
+        if (notification) {
+          await this.notificationsService.publishNew(
+            result.orders.id,
+            notification.id,
+          );
+        }
 
-    return {
-      orders: { ...orders, total: totalSoles, item_irderns: itemsEnSoles },
-    };
-  }).then(async (result) => {
-    const notification = await this.prisma.notifications.findFirst({
-      where: { order_id: result.orders.id, type: 'nuevo' },
-      orderBy: { id: 'desc' },
-      select: { id: true },
-    });
-
-    if (notification) {
-      await this.notificationsService.publishNew(result.orders.id, notification.id);
-    }
-
-    return result;
-  });
-}
-  private async calculateTotales(createOrderDto: CreateOrderDto): Promise<number> {
+        return result;
+      });
+  }
+  private async calculateTotales(
+    createOrderDto: CreateOrderDto,
+  ): Promise<number> {
+    const dollarRate = await this.getDollarRate();
     let totales = 0;
 
     for (const item of createOrderDto.items) {
@@ -150,29 +171,39 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
         where: {
           id: item.article_id,
         },
+        select: {
+          public_price: true,
+          currency_type_id: true,
+        },
       });
-      const unit_price = Number(consulta?.public_price) || 0;
+      const unit_price = this.toSoles(
+        consulta?.public_price,
+        consulta?.currency_type_id,
+        dollarRate,
+      );
       const subtotal = unit_price * Number(item.quantity);
 
       totales += subtotal;
     }
 
     return totales;
-}
-
-  async findAll(id?: string, userId?: number | string, isAdmin = false) {
-  let idFilter = Prisma.sql``;
-
-  if (id) {
-    if (!isAdmin && userId !== undefined && String(id) !== String(userId)) {
-      throw new ForbiddenException('No tienes permiso para acceder a estas órdenes');
-    }
-    idFilter = Prisma.sql`WHERE c.id = ${BigInt(id)}`;
-  } else if (!isAdmin && userId !== undefined) {
-    idFilter = Prisma.sql`WHERE c.id = ${BigInt(String(userId))}`;
   }
 
-  const order = await this.prisma.$queryRaw<any[]>`
+  async findAll(id?: string, userId?: number | string, isAdmin = false) {
+    let idFilter = Prisma.sql``;
+
+    if (id) {
+      if (!isAdmin && userId !== undefined && String(id) !== String(userId)) {
+        throw new ForbiddenException(
+          'No tienes permiso para acceder a estas órdenes',
+        );
+      }
+      idFilter = Prisma.sql`WHERE c.id = ${BigInt(id)}`;
+    } else if (!isAdmin && userId !== undefined) {
+      idFilter = Prisma.sql`WHERE c.id = ${BigInt(String(userId))}`;
+    }
+
+    const order = await this.prisma.$queryRaw<any[]>`
     SELECT
       o.id,
       o.client_id,
@@ -202,48 +233,64 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     ${idFilter}
 
     GROUP BY o.id
+    ORDER BY o.created_at DESC, o.id DESC
   `;
 
-  const dollarRate = await this.getDollarRate();
+    const dollarRate = await this.getDollarRate();
 
-  return order.map((currentOrder) => {
-    const items = typeof currentOrder.items === 'string'
-      ? JSON.parse(currentOrder.items)
-      : currentOrder.items;
-    const normalizedItems = Array.isArray(items)
-      ? items.map((item) => ({
-          ...item,
-          unit_price: this.toSoles(item.unit_price, item.currency_type_id, dollarRate),
-          subtotal: this.toSoles(item.subtotal, item.currency_type_id, dollarRate),
-        }))
-      : items;
+    return order.map((currentOrder) => {
+      const items =
+        typeof currentOrder.items === 'string'
+          ? JSON.parse(currentOrder.items)
+          : currentOrder.items;
+      const normalizedItems = Array.isArray(items)
+        ? items.map((item) => ({
+            ...item,
+            unit_price: this.toSoles(
+              item.unit_price,
+              item.currency_type_id,
+              dollarRate,
+            ),
+            subtotal: this.toSoles(
+              item.subtotal,
+              item.currency_type_id,
+              dollarRate,
+            ),
+          }))
+        : items;
 
-    const totalSoles = Array.isArray(normalizedItems)
-      ? normalizedItems.reduce(
-          (total, item) => total + Number(item.subtotal || 0),
-          0,
-        )
-      : this.toSoles(currentOrder.total, '1', dollarRate);
+      const totalSoles = Array.isArray(normalizedItems)
+        ? normalizedItems.reduce(
+            (total, item) => total + Number(item.subtotal || 0),
+            0,
+          )
+        : this.toSoles(currentOrder.total, '1', dollarRate);
 
-    return {
-      ...currentOrder,
-      items: normalizedItems,
-      total: Number(totalSoles.toFixed(2)),
-    };
-  });
-}
+      return {
+        ...currentOrder,
+        items: normalizedItems,
+        total: Number(totalSoles.toFixed(2)),
+      };
+    });
+  }
 
-  private assertOrderAccess(order: any, userId?: number | string, isAdmin = false) {
+  private assertOrderAccess(
+    order: any,
+    userId?: number | string,
+    isAdmin = false,
+  ) {
     if (isAdmin) return;
     if (userId === undefined) {
       throw new ForbiddenException('No autorizado');
     }
     if (String(order.client_id) !== String(userId)) {
-      throw new ForbiddenException('No tienes permiso para acceder a esta orden');
+      throw new ForbiddenException(
+        'No tienes permiso para acceder a esta orden',
+      );
     }
   }
 
-  async  findOne(id: number, userId?: number | string, isAdmin = false) {
+  async findOne(id: number, userId?: number | string, isAdmin = false) {
     const respuesta = await this.prisma.$queryRaw<any[]>`
  SELECT
    o.id,
@@ -268,8 +315,8 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     return respuesta[0];
   }
 
-  async detalleOrdenes(id:number, userId?: number | string, isAdmin = false){
-     const order = await this.prisma.$queryRaw<any[]>`
+  async detalleOrdenes(id: number, userId?: number | string, isAdmin = false) {
+    const order = await this.prisma.$queryRaw<any[]>`
     SELECT
       o.id,
       o.client_id,
@@ -286,6 +333,7 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
           'quantity', oi.quantity,
           'unit_price', oi.unit_price,
           'subtotal', oi.subtotal,
+          'currency_type_id', a.currency_type_id,
           'article_description', a.description
         )
       ) AS items
@@ -300,15 +348,53 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     GROUP BY o.id
   `;
 
-  if (!order || order.length === 0) {
-    throw new BadRequestException('Orden no encontrada');
+    if (!order || order.length === 0) {
+      throw new BadRequestException('Orden no encontrada');
+    }
+    this.assertOrderAccess(order[0], userId, isAdmin);
+
+    const dollarRate = await this.getDollarRate();
+
+    const items =
+      typeof order[0].items === 'string'
+        ? JSON.parse(order[0].items)
+        : order[0].items;
+    const normalizedItems = Array.isArray(items)
+      ? items.map((item) => ({
+          ...item,
+          unit_price: this.toSoles(
+            item.unit_price,
+            item.currency_type_id,
+            dollarRate,
+          ),
+          subtotal: this.toSoles(
+            item.subtotal,
+            item.currency_type_id,
+            dollarRate,
+          ),
+        }))
+      : items;
+
+    const totalSoles = Array.isArray(normalizedItems)
+      ? normalizedItems.reduce(
+          (total, item) => total + Number(item.subtotal || 0),
+          0,
+        )
+      : this.toSoles(order[0].total, '1', dollarRate);
+
+    return {
+      ...order[0],
+      items: normalizedItems,
+      total: Number(totalSoles.toFixed(2)),
+    };
   }
-  this.assertOrderAccess(order[0], userId, isAdmin);
-  return order[0];
 
-}
-
-  async generatePdf(id: number, res: Response, userId?: number | string, isAdmin = false): Promise<void> {
+  async generatePdf(
+    id: number,
+    res: Response,
+    userId?: number | string,
+    isAdmin = false,
+  ): Promise<void> {
     // Verificar acceso ANTES de enviar cualquier byte de la respuesta
     const orders: any[] = await this.prisma.$queryRaw`
     SELECT
@@ -365,7 +451,8 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     doc.pipe(res);
 
     const order = orders[0];
-    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+    const items =
+      typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },
       select: { sale_rate: true },
@@ -379,7 +466,8 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     };
     const totalSoles = Array.isArray(items)
       ? items.reduce(
-          (total, item) => total + toSoles(item.subtotal, item.currency_type_id),
+          (total, item) =>
+            total + toSoles(item.subtotal, item.currency_type_id),
           0,
         )
       : toSoles(order.total, '1');
@@ -395,15 +483,25 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, 50, 30, { width: 180 });
     } else {
-      doc.font('Helvetica-Bold').fontSize(24).fillColor(colorPrimario).text('CYBERHOUSE', 50, 50, { continued: true }).fillColor('#000000').text('TEC');
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(24)
+        .fillColor(colorPrimario)
+        .text('CYBERHOUSE', 50, 50, { continued: true })
+        .fillColor('#000000')
+        .text('TEC');
     }
-    
+
     // Datos de la empresa
     doc.fontSize(10).fillColor(colorGris);
     let yCompany = 85;
     doc.text('RUC: 20614604825', 50, yCompany);
     yCompany += 15;
-    doc.text('Dirección: AV. INCA GARCILASO DE LA VEGA NRO. 1348', 50, yCompany);
+    doc.text(
+      'Dirección: AV. INCA GARCILASO DE LA VEGA NRO. 1348',
+      50,
+      yCompany,
+    );
     yCompany += 12;
     doc.text('(INT 1049-1053 PISO 1 REF. TDA 1A 164-141) LIMA', 50, yCompany);
     yCompany += 15;
@@ -422,33 +520,64 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     doc.text('BCO. CONTINENTAL DOLARES: 0011-0175-0100099783', 50, yCompany);
 
     // Datos del Comprobante (Alineado a la derecha)
-    doc.font('Helvetica-Bold').fontSize(16).fillColor(colorTexto).text('COMPROBANTE DE ORDEN', 250, 50, { align: 'right' });
-    
-    doc.fontSize(12).fillColor(colorPrimario).text(`N° Orden: #${String(order.id).padStart(6, '0')}`, 250, 75, { align: 'right' });
-    
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(16)
+      .fillColor(colorTexto)
+      .text('COMPROBANTE DE ORDEN', 250, 50, { align: 'right' });
+
+    doc
+      .fontSize(12)
+      .fillColor(colorPrimario)
+      .text(`N° Orden: #${String(order.id).padStart(6, '0')}`, 250, 75, {
+        align: 'right',
+      });
+
     let fechaTexto = 'PROCESADO';
     if (order.created_at) {
-      fechaTexto = new Date(order.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+      fechaTexto = new Date(order.created_at).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
     }
-    doc.fontSize(10).fillColor(colorGris).text(`Fecha: ${fechaTexto}`, 250, 95, { align: 'right' });
+    doc
+      .fontSize(10)
+      .fillColor(colorGris)
+      .text(`Fecha: ${fechaTexto}`, 250, 95, { align: 'right' });
 
     // Línea separadora
     const separatorY = yCompany + 20;
-    doc.moveTo(50, separatorY).lineTo(545, separatorY).lineWidth(1).strokeColor('#E0E0E0').stroke();
+    doc
+      .moveTo(50, separatorY)
+      .lineTo(545, separatorY)
+      .lineWidth(1)
+      .strokeColor('#E0E0E0')
+      .stroke();
 
     // --- DATOS DEL CLIENTE ---
-    const clientName = `${order.client_names || ''} ${order.client_lastnames || ''}`.trim() || 'Cliente Desconocido';
-    
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(colorTexto).text('Facturado a:', 50, separatorY + 15);
-    doc.font('Helvetica').fontSize(11).fillColor(colorGris).text(`Cliente: ${clientName}`, 50, separatorY + 35);
+    const clientName =
+      `${order.client_names || ''} ${order.client_lastnames || ''}`.trim() ||
+      'Cliente Desconocido';
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(12)
+      .fillColor(colorTexto)
+      .text('Facturado a:', 50, separatorY + 15);
+    doc
+      .font('Helvetica')
+      .fontSize(11)
+      .fillColor(colorGris)
+      .text(`Cliente: ${clientName}`, 50, separatorY + 35);
     doc.text(`Estado de Orden: PROCESADO`, 50, separatorY + 50);
 
     // --- TABLA DE PRODUCTOS ---
-    let tableTop = separatorY + 80;
-    
+    const tableTop = separatorY + 80;
+
     // Fondo del encabezado de la tabla
     doc.rect(50, tableTop, 495, 25).fillColor(colorPrimario).fill();
-    
+
     // Texto del encabezado de la tabla
     doc.font('Helvetica-Bold').fontSize(10).fillColor('#FFFFFF');
     doc.text('DESCRIPCIÓN', 60, tableTop + 8);
@@ -466,48 +595,90 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
 
         // Fila sombreada alterna
         if (i % 2 === 1) {
-            doc.rect(50, y - 5, 495, 20).fillColor('#F9F9F9').fill();
-            doc.fillColor(colorTexto);
+          doc
+            .rect(50, y - 5, 495, 20)
+            .fillColor('#F9F9F9')
+            .fill();
+          doc.fillColor(colorTexto);
         }
 
         doc.text(item.article_description.substring(0, 50), 60, y);
-        doc.text(item.quantity.toString(), 320, y, { width: 50, align: 'center' });
-        doc.text(`S/ ${toSoles(item.unit_price, item.currency_type_id).toFixed(2)}`, 380, y, { width: 70, align: 'right' });
-        doc.text(`S/ ${toSoles(item.subtotal, item.currency_type_id).toFixed(2)}`, 460, y, { width: 75, align: 'right' });
+        doc.text(item.quantity.toString(), 320, y, {
+          width: 50,
+          align: 'center',
+        });
+        doc.text(
+          `S/ ${toSoles(item.unit_price, item.currency_type_id).toFixed(2)}`,
+          380,
+          y,
+          { width: 70, align: 'right' },
+        );
+        doc.text(
+          `S/ ${toSoles(item.subtotal, item.currency_type_id).toFixed(2)}`,
+          460,
+          y,
+          { width: 75, align: 'right' },
+        );
 
         y += 20;
       }
     }
 
     // Línea separadora final de tabla
-    doc.moveTo(50, y + 5).lineTo(545, y + 5).lineWidth(1).strokeColor('#E0E0E0').stroke();
+    doc
+      .moveTo(50, y + 5)
+      .lineTo(545, y + 5)
+      .lineWidth(1)
+      .strokeColor('#E0E0E0')
+      .stroke();
 
     // --- TOTALES ---
     const totalTop = y + 15;
-    
+
     // Recuadro para el total
     doc.rect(350, totalTop, 195, 30).fillColor('#F0F0F0').fill();
-    
+
     doc.font('Helvetica-Bold').fontSize(12).fillColor(colorTexto);
     doc.text('TOTAL:', 360, totalTop + 9);
-    doc.font('Helvetica-Bold').fontSize(14).fillColor(colorPrimario).text(`S/ ${totalSoles.toFixed(2)}`, 400, totalTop + 8, { width: 135, align: 'right' });
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .fillColor(colorPrimario)
+      .text(`S/ ${totalSoles.toFixed(2)}`, 400, totalTop + 8, {
+        width: 135,
+        align: 'right',
+      });
 
     // Mensaje de agradecimiento
     doc.font('Helvetica-Oblique').fontSize(10).fillColor(colorGris);
     doc.text('¡Gracias por su preferencia!', 50, totalTop + 10);
-    doc.text('Si tiene alguna duda sobre esta orden, por favor contáctenos.', 50, totalTop + 25);
+    doc.text(
+      'Si tiene alguna duda sobre esta orden, por favor contáctenos.',
+      50,
+      totalTop + 25,
+    );
     doc.text('Teléfono: 981206097', 50, totalTop + 50);
 
     // Pie de página
     const bottomY = doc.page.height - 50;
-    doc.moveTo(50, bottomY - 10).lineTo(545, bottomY - 10).lineWidth(0.5).strokeColor('#E0E0E0').stroke();
+    doc
+      .moveTo(50, bottomY - 10)
+      .lineTo(545, bottomY - 10)
+      .lineWidth(0.5)
+      .strokeColor('#E0E0E0')
+      .stroke();
     doc.font('Helvetica').fontSize(8).fillColor('#999999');
-    doc.text('Este documento es un comprobante de orden generado electrónicamente.', 50, bottomY, { align: 'center', width: 495 });
+    doc.text(
+      'Este documento es un comprobante de orden generado electrónicamente.',
+      50,
+      bottomY,
+      { align: 'center', width: 495 },
+    );
 
     doc.end();
-}
-  
-  async masVendidos(){
+  }
+
+  async masVendidos() {
     const respuesta = await this.prisma.$queryRaw<any[]>`
 SELECT 
   a.description,  
@@ -517,7 +688,6 @@ JOIN articles a ON a.id = oi.article_id
 GROUP BY a.id
 ORDER BY total_vendido DESC;
   `;
-     return respuesta;
-}
-
+    return respuesta;
+  }
 }
