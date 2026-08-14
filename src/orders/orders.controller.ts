@@ -12,6 +12,7 @@ import { GetClient } from '../auth/decorators/get-client.decorator';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get('mas-vendidos-productos')
   masVendidos() {
     return this.ordersService.masVendidos();
@@ -19,8 +20,12 @@ export class OrdersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  create(@Body() createOrderDto: CreateOrderDto, @GetClient() user: any) {
+    return this.ordersService.create(
+      createOrderDto,
+      user?.id,
+      user?.role === 'admin',
+    );
   }
 
   @UseGuards(JwtAuthGuard)

@@ -38,9 +38,21 @@ export class OrdersService {
     return String(currencyTypeId) === '1' ? amount : amount * dollarRate;
   }
 
-  async create(createOrderDto: CreateOrderDto) {
+  async create(
+    createOrderDto: CreateOrderDto,
+    userId?: number | string,
+    isAdmin = false,
+  ) {
     if (!createOrderDto.document_type_id) {
       throw new UnauthorizedException('Debes indicar si es boleta o factura');
+    }
+
+    const clientId = isAdmin && createOrderDto.client_id
+      ? createOrderDto.client_id
+      : Number(userId);
+
+    if (!clientId || Number.isNaN(clientId)) {
+      throw new UnauthorizedException('No se pudo determinar el cliente');
     }
 
     const totales = await this.calculateTotales(createOrderDto);
@@ -49,7 +61,7 @@ export class OrdersService {
       .$transaction(async (tx) => {
         const orders = await tx.orders.create({
           data: {
-            client_id: createOrderDto.client_id,
+            client_id: clientId,
             document_type_id: createOrderDto.document_type_id,
             status: 'pending',
             total: totales,
@@ -193,6 +205,9 @@ export class OrdersService {
     let idFilter = Prisma.sql``;
 
     if (id) {
+      if (!/^\d+$/.test(String(id).trim())) {
+        throw new BadRequestException('El parámetro id debe ser numérico');
+      }
       if (!isAdmin && userId !== undefined && String(id) !== String(userId)) {
         throw new ForbiddenException(
           'No tienes permiso para acceder a estas órdenes',

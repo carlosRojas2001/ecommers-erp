@@ -1,4 +1,12 @@
-import {IsArray,IsNotEmpty,IsNumber,IsOptional,IsPositive,ValidateNested,} from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  Max,
+  ValidateNested,
+} from 'class-validator';
 
 import { Type } from 'class-transformer';
 
@@ -9,32 +17,21 @@ export class CreateOrderItemDto {
 
   @IsNumber()
   @IsPositive()
+  @Max(9999)
   quantity!: number;
-
-  // @IsNumber()
-  // @IsPositive()
-  // @IsOptional()
-  // unit_price?: number;
-
 }
 
 export class CreateOrderDto {
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
-  client_id!: number;
-
-
+  client_id?: number;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @IsArray()
   @Type(() => CreateOrderItemDto)
   items!: CreateOrderItemDto[];
-
 
   @IsNumber()
   @IsNotEmpty()
   document_type_id!: number;
-
-
 }

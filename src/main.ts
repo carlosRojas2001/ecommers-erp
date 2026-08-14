@@ -34,8 +34,17 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  const config = app.get(ConfigService);
+  const allowedOrigins = [
+    config.get<string>('FRONTEND_URL'),
+    config.get<string>('APP_URL'),
+    ...(config.get<string>('CSRF_ALLOWED_ORIGINS') ?? '').split(','),
+  ]
+    .map((s) => s?.trim())
+    .filter((s): s is string => !!s);
+
   app.enableCors({
-    origin: true,
+    origin: allowedOrigins.length ? allowedOrigins : false,
     credentials: true,
   });
 
