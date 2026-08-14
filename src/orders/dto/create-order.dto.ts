@@ -1,6 +1,6 @@
 import {
   IsArray,
-  IsBoolean,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -36,6 +36,8 @@ export class CreateOrderDto {
   @IsNotEmpty()
   document_type_id!: number;
 
-  @IsBoolean()
+  @IsIn([true], {
+    message: 'Debes aceptar los términos y condiciones para crear la orden',
+  })
   terms!: boolean;
 }
