@@ -68,6 +68,7 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
   throw new UnauthorizedException('Para boleta necesitas registrar tu DNI (8 dígitos)');
 }
 
+    const dollarRate = await this.getDollarRate();
     const item_irderns = await Promise.all(
       createOrderDto.items.map(async (item: any) => {
         const article = await tx.articles.findUnique({
@@ -75,13 +76,15 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
             id: item.article_id,
           },
         });
-        const unit_price = article?.public_price;
-        const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
+        const unit_price_raw = Number(article?.public_price) || 0;
+        const isSoles = String(article?.currency_type_id) === '1';
+        const unit_price = isSoles ? unit_price_raw : unit_price_raw * dollarRate;
+        const subtotal = unit_price * Number(item.quantity);
 
         return tx.order_items.create({
           data: {
             quantity: item.quantity,
-            unit_price: unit_price || 0,
+            unit_price: unit_price,
             subtotal: subtotal,
 
             orders: {
@@ -115,6 +118,7 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
   });
 }
   private async calculateTotales(createOrderDto: CreateOrderDto): Promise<number> {
+    const dollarRate = await this.getDollarRate();
     let totales = 0;
 
     for (const item of createOrderDto.items) {
@@ -123,10 +127,14 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
           id: item.article_id,
         },
       });
-      const unit_price = consulta?.public_price;
-      const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
+      const unit_price = Number(consulta?.public_price) || 0;
+      const subtotal = unit_price * Number(item.quantity);
 
-      totales += subtotal;
+      const subtotalSoles = String(consulta?.currency_type_id) === '1'
+        ? subtotal
+        : subtotal * dollarRate;
+
+      totales += subtotalSoles;
     }
 
     return totales;
