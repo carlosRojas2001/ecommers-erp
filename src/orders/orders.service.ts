@@ -202,7 +202,12 @@ export class OrdersService {
     return totales;
   }
 
-  async findAll(id?: string, userId?: number | string, isAdmin = false) {
+  async findAll(
+    id?: string,
+    userId?: number | string,
+    isAdmin = false,
+    pagination?: { page?: string; limit?: string },
+  ) {
     let idFilter = Prisma.sql``;
 
     if (id) {
@@ -219,42 +224,61 @@ export class OrdersService {
       idFilter = Prisma.sql`WHERE c.id = ${BigInt(String(userId))}`;
     }
 
-    const order = await this.prisma.$queryRaw<any[]>`
-    SELECT
-      o.id,
-      o.client_id,
-      o.total,
-      o.status,
-      c.id AS client_id,
-      c.names AS client_name,
-      o.created_at,
+    const page = Math.max(
+      1,
+      Math.trunc(Number(pagination?.page)) || 1,
+    );
+    const limit = Math.min(
+      100,
+      Math.max(1, Math.trunc(Number(pagination?.limit)) || 10),
+    );
+    const offset = (page - 1) * limit;
 
-      JSON_ARRAYAGG(
-        JSON_OBJECT(
-          'id', oi.id,
-          'article_id', oi.article_id,
-          'quantity', oi.quantity,
-          'unit_price', oi.unit_price,
-          'subtotal', oi.subtotal,
-          'currency_type_id', a.currency_type_id,
-          'article_description', a.description
-        )
-      ) AS items
+    const [order, countResult] = await Promise.all([
+      this.prisma.$queryRaw<any[]>`
+      SELECT
+        o.id,
+        o.client_id,
+        o.total,
+        o.status,
+        c.id AS client_id,
+        c.names AS client_name,
+        o.created_at,
 
-    FROM orders o
-    LEFT JOIN order_items oi ON oi.order_id = o.id
-    LEFT JOIN articles a ON a.id = oi.article_id
-    LEFT JOIN clients c ON c.id = o.client_id
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'article_id', oi.article_id,
+            'quantity', oi.quantity,
+            'unit_price', oi.unit_price,
+            'subtotal', oi.subtotal,
+            'currency_type_id', a.currency_type_id,
+            'article_description', a.description
+          )
+        ) AS items
 
-    ${idFilter}
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN articles a ON a.id = oi.article_id
+      LEFT JOIN clients c ON c.id = o.client_id
 
-    GROUP BY o.id
-    ORDER BY o.created_at DESC, o.id DESC
-  `;
+      ${idFilter}
+
+      GROUP BY o.id
+      ORDER BY o.created_at DESC, o.id DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `,
+      this.prisma.$queryRaw<any[]>`
+      SELECT COUNT(DISTINCT o.id) AS total
+      FROM orders o
+      LEFT JOIN clients c ON c.id = o.client_id
+      ${idFilter}
+    `,
+    ]);
 
     const dollarRate = await this.getDollarRate();
 
-    return order.map((currentOrder) => {
+    const data = order.map((currentOrder) => {
       const items =
         typeof currentOrder.items === 'string'
           ? JSON.parse(currentOrder.items)
@@ -262,15 +286,19 @@ export class OrdersService {
       const normalizedItems = Array.isArray(items)
         ? items.map((item) => ({
             ...item,
-            unit_price: this.toSoles(
-              item.unit_price,
-              item.currency_type_id,
-              dollarRate,
+            unit_price: Number(
+              this.toSoles(
+                item.unit_price,
+                item.currency_type_id,
+                dollarRate,
+              ).toFixed(2),
             ),
-            subtotal: this.toSoles(
-              item.subtotal,
-              item.currency_type_id,
-              dollarRate,
+            subtotal: Number(
+              this.toSoles(
+                item.subtotal,
+                item.currency_type_id,
+                dollarRate,
+              ).toFixed(2),
             ),
           }))
         : items;
@@ -288,6 +316,20 @@ export class OrdersService {
         total: Number(totalSoles.toFixed(2)),
       };
     });
+
+    const total = Number(countResult[0]?.total ?? 0);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   private assertOrderAccess(
@@ -378,15 +420,19 @@ export class OrdersService {
     const normalizedItems = Array.isArray(items)
       ? items.map((item) => ({
           ...item,
-          unit_price: this.toSoles(
-            item.unit_price,
-            item.currency_type_id,
-            dollarRate,
+          unit_price: Number(
+            this.toSoles(
+              item.unit_price,
+              item.currency_type_id,
+              dollarRate,
+            ).toFixed(2),
           ),
-          subtotal: this.toSoles(
-            item.subtotal,
-            item.currency_type_id,
-            dollarRate,
+          subtotal: Number(
+            this.toSoles(
+              item.subtotal,
+              item.currency_type_id,
+              dollarRate,
+            ).toFixed(2),
           ),
         }))
       : items;

@@ -12,11 +12,11 @@ El módulo de **Órdenes** gestiona la creación de pedidos y la generación de 
 | Método | Ruta | Descripción | Autenticación |
 |--------|------|-------------|---------------|
 | `POST` | `/api/orders` | Crear nueva orden | JWT |
-| `GET` | `/api/orders` | Listar órdenes (del cliente autenticado o todas si es admin). `?id={client_id}` filtra por cliente | JWT |
+| `GET` | `/api/orders` | Listar órdenes (del cliente autenticado o todas si es admin). `?id={client_id}` filtra por cliente. `?page={n}` y `?limit={n}` para paginación | JWT |
 | `GET` | `/api/orders/:id` | Obtener orden por ID (dueño o admin) | JWT |
 | `GET` | `/api/orders/detalle/:id` | Detalle completo de orden (dueño o admin) | JWT |
 | `GET` | `/api/orders/pdf/:id` | Generar PDF de la orden (dueño o admin) | JWT |
-| `GET` | `/api/orders/mas-vendidos-productos` | Productos más vendidos (agregación global, sin datos de clientes) | No |
+| `GET` | `/api/orders/mas-vendidos-productos` | Productos más vendidos (agregación global, sin datos de clientes) | JWT |
 
 ---
 
@@ -39,11 +39,14 @@ Authorization: Bearer {token}
 
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
-| `client_id` | number | **Sí** | ID del cliente que realiza la compra |
 | `document_type_id` | number | **Sí** | Tipo de comprobante: `1` = Factura, `3` = Boleta |
+| `terms` | boolean | **Sí** | Aceptación de términos y condiciones. Debe ser exactamente `true`; de lo contrario retorna `400` |
 | `items` | array | **Sí** | Lista de productos a comprar |
 | `items[].article_id` | number | **Sí** | ID del artículo/producto |
-| `items[].quantity` | number | **Sí** | Cantidad a comprar (mínimo 1) |
+| `items[].quantity` | number | **Sí** | Cantidad a comprar (mínimo 1, máximo 9999) |
+| `client_id` | number | No | Solo usado por **admins** para crear una orden a nombre de otro cliente. Para clientes normales se toma del JWT (se ignora si se envía) |
+
+> **Seguridad:** el `client_id` de la orden se determina por el token JWT. Un cliente no puede crear órdenes a nombre de otro (intento controlado por IDOR).
 
 ---
 
@@ -67,8 +70,8 @@ curl -X POST http://localhost:3000/api/orders \
   -H "Authorization: Bearer TU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": 1,
     "document_type_id": 1,
+    "terms": true,
     "items": [
       {
         "article_id": 10,
@@ -89,8 +92,8 @@ curl -X POST http://localhost:3000/api/orders \
   -H "Authorization: Bearer TU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "client_id": 2,
     "document_type_id": 3,
+    "terms": true,
     "items": [
       {
         "article_id": 10,
@@ -166,6 +169,8 @@ curl -X POST http://localhost:3000/api/orders \
 ```
 GET /api/orders
 GET /api/orders?id=123
+GET /api/orders?page=2&limit=20
+GET /api/orders?id=123&page=1&limit=10
 ```
 
 > **Autenticación:** requiere JWT. Un cliente solo ve sus propias órdenes; un admin (`role === 'admin'`) ve todas o filtra por cliente con `?id={client_id}`.
@@ -176,33 +181,60 @@ GET /api/orders?id=123
 | Parámetro | Tipo | Descripción |
 |-----------|------|-------------|
 | `id` | string | Filtrar por ID de cliente |
+| `page` | number | Página a consultar (default `1`, mínimo `1`) |
+| `limit` | number | Órdenes por página (default `10`, mínimo `1`, máximo `100`) |
 
 ### Respuesta
 
+> **Paginada:** la respuesta es un objeto con `data` (array de órdenes de la página) y `meta` (información de paginación).
+
 ```json
-[
-  {
-    "id": 1,
-    "client_id": 1,
-    "total": 4500.00,
-    "status": "pending",
-    "created_at": "2026-08-11T10:30:00.000Z",
-    "client_name": "Juan Pérez",
-    "items": [
-      {
-        "id": 1,
-        "article_id": 10,
-        "quantity": 2,
-        "unit_price": 1500.00,
-        "subtotal": 3000.00,
-        "currency_type_id": 1,
-        "article_description": "Laptop HP Pavilion"
-      }
-    ],
-    "total_soles": 4500.00
+{
+  "data": [
+    {
+      "id": 1,
+      "client_id": 1,
+      "total": 4500.00,
+      "status": "pending",
+      "created_at": "2026-08-11T10:30:00.000Z",
+      "client_name": "Juan Pérez",
+      "items": [
+        {
+          "id": 1,
+          "article_id": 10,
+          "quantity": 2,
+          "unit_price": 1500.00,
+          "subtotal": 3000.00,
+          "currency_type_id": 1,
+          "article_description": "Laptop HP Pavilion"
+        }
+      ],
+      "total_soles": 4500.00
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 35,
+    "totalPages": 4,
+    "hasNextPage": true,
+    "hasPrevPage": false
   }
-]
+}
 ```
+
+### Campos de `meta`
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `page` | number | Página actual |
+| `limit` | number | Cantidad de órdenes por página |
+| `total` | number | Total de órdenes que cumplen el filtro |
+| `totalPages` | number | Total de páginas (`ceil(total / limit)`) |
+| `hasNextPage` | boolean | `true` si existe una página siguiente |
+| `hasPrevPage` | boolean | `true` si existe una página anterior |
+
+> **Ejemplo:** si un cliente tiene 35 órdenes y se consulta `?page=2&limit=10`, se devuelven las órdenes 11–20 con `meta.total = 35`, `meta.totalPages = 4`, `hasNextPage = true`, `hasPrevPage = true`.
 
 ---
 
@@ -415,8 +447,8 @@ const crearFactura = async () => {
       'Authorization': 'Bearer TU_TOKEN'
     },
     body: JSON.stringify({
-      client_id: 1,
       document_type_id: 1,  // 1 = Factura
+      terms: true,          // aceptación de términos (obligatorio)
       items: [
         { article_id: 10, quantity: 2 },
         { article_id: 25, quantity: 1 }
@@ -437,8 +469,8 @@ const crearBoleta = async () => {
       'Authorization': 'Bearer TU_TOKEN'
     },
     body: JSON.stringify({
-      client_id: 2,
       document_type_id: 3,  // 3 = Boleta
+      terms: true,          // aceptación de términos (obligatorio)
       items: [
         { article_id: 10, quantity: 1 }
       ]

@@ -30,9 +30,14 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@Query('id') id: string, @GetClient() user: any) {
+  findAll(
+    @Query('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @GetClient() user: any,
+  ) {
     const isAdmin = user.role === 'admin';
-    return this.ordersService.findAll(id, user.id, isAdmin);
+    return this.ordersService.findAll(id, user.id, isAdmin, { page, limit });
   }
 
   @UseGuards(JwtAuthGuard)
