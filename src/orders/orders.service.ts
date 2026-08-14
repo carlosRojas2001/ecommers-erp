@@ -203,14 +203,14 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     const normalizedItems = Array.isArray(items)
       ? items.map((item) => ({
           ...item,
-          unit_price_soles: this.toSoles(item.unit_price, item.currency_type_id, dollarRate),
-          subtotal_soles: this.toSoles(item.subtotal, item.currency_type_id, dollarRate),
+          unit_price: this.toSoles(item.unit_price, item.currency_type_id, dollarRate),
+          subtotal: this.toSoles(item.subtotal, item.currency_type_id, dollarRate),
         }))
       : items;
 
     const totalSoles = Array.isArray(normalizedItems)
       ? normalizedItems.reduce(
-          (total, item) => total + Number(item.subtotal_soles || 0),
+          (total, item) => total + Number(item.subtotal || 0),
           0,
         )
       : this.toSoles(currentOrder.total, '1', dollarRate);
@@ -218,7 +218,7 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     return {
       ...currentOrder,
       items: normalizedItems,
-      total_soles: Number(totalSoles.toFixed(2)),
+      total: Number(totalSoles.toFixed(2)),
     };
   });
 }
