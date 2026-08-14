@@ -68,7 +68,6 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
   throw new UnauthorizedException('Para boleta necesitas registrar tu DNI (8 dígitos)');
 }
 
-    const dollarRate = await this.getDollarRate();
     const item_irderns = await Promise.all(
       createOrderDto.items.map(async (item: any) => {
         const article = await tx.articles.findUnique({
@@ -76,15 +75,13 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
             id: item.article_id,
           },
         });
-        const unit_price_raw = Number(article?.public_price) || 0;
-        const isSoles = String(article?.currency_type_id) === '1';
-        const unit_price = isSoles ? unit_price_raw : unit_price_raw * dollarRate;
-        const subtotal = unit_price * Number(item.quantity);
+        const unit_price = article?.public_price;
+        const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
 
         return tx.order_items.create({
           data: {
             quantity: item.quantity,
-            unit_price: unit_price,
+            unit_price: unit_price || 0,
             subtotal: subtotal,
 
             orders: {
@@ -100,8 +97,24 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
 
     await this.notificationsService.createNew(orders.id, undefined, tx);
 
+    const dollarRate = await this.getDollarRate();
+    const itemsEnSoles = await Promise.all(
+      item_irderns.map(async (item: any) => {
+        const article = await tx.articles.findUnique({
+          where: { id: item.article_id },
+          select: { currency_type_id: true },
+        });
+        const isSoles = String(article?.currency_type_id) === '1';
+        return {
+          ...item,
+          unit_price_soles: isSoles ? Number(item.unit_price) : Number(item.unit_price) * dollarRate,
+          subtotal_soles: isSoles ? Number(item.subtotal) : Number(item.subtotal) * dollarRate,
+        };
+      })
+    );
+
     return {
-      orders: { ...orders, item_irderns },
+      orders: { ...orders, item_irderns: itemsEnSoles },
     };
   }).then(async (result) => {
     const notification = await this.prisma.notifications.findFirst({
@@ -118,7 +131,6 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
   });
 }
   private async calculateTotales(createOrderDto: CreateOrderDto): Promise<number> {
-    const dollarRate = await this.getDollarRate();
     let totales = 0;
 
     for (const item of createOrderDto.items) {
@@ -130,11 +142,7 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
       const unit_price = Number(consulta?.public_price) || 0;
       const subtotal = unit_price * Number(item.quantity);
 
-      const subtotalSoles = String(consulta?.currency_type_id) === '1'
-        ? subtotal
-        : subtotal * dollarRate;
-
-      totales += subtotalSoles;
+      totales += subtotal;
     }
 
     return totales;
