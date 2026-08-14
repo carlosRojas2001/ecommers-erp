@@ -27,9 +27,9 @@ export class OrdersService {
 
   private toSoles(value: unknown, currencyTypeId: unknown, dollarRate: number): number {
     const amount = Number(value) || 0;
-    return String(currencyTypeId) === '2' && dollarRate > 0
-      ? amount * dollarRate
-      : amount;
+    return String(currencyTypeId) === '1'
+      ? amount
+      : amount * dollarRate;
   }  
 
 async create(createOrderDto: CreateOrderDto) {
@@ -345,9 +345,9 @@ if (Number(orders.document_type_id)=== 3 && orders?.clients?.document_number?.le
     const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
     const toSoles = (value: unknown, currencyTypeId: unknown) => {
       const amount = Number(value) || 0;
-      return String(currencyTypeId) === '1'
-        ? amount
-        : amount * dollarRate;
+      return String(currencyTypeId) === '2' && dollarRate > 0
+        ? amount * dollarRate
+        : amount;
     };
     const totalSoles = Array.isArray(items)
       ? items.reduce(
