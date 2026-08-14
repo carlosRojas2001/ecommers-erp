@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -34,4 +35,7 @@ export class CreateOrderDto {
   @IsNumber()
   @IsNotEmpty()
   document_type_id!: number;
+
+  @IsBoolean()
+  terms!: boolean;
 }

@@ -2874,6 +2874,7 @@ model orders {
   status           orders_status?  @default(processing)
   sale_id          BigInt?         @unique(map: "orders_sale_id_unique") @db.UnsignedBigInt
   is_cancelled     Boolean         @default(false)
+  terms            Boolean         @default(false)
   created_at       DateTime        @default(now()) @db.Timestamp(0)
   notifications    notifications[]
   order_items      order_items[]

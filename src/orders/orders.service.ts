@@ -65,6 +65,7 @@ export class OrdersService {
             document_type_id: createOrderDto.document_type_id,
             status: 'pending',
             total: totales,
+            terms: createOrderDto.terms,
           },
           include: {
             clients: true,
