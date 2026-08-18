@@ -16,6 +16,7 @@ import { ChatbootModule } from './chatboot/chatboot.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ConsultaModule } from './consulta/consulta.module';
 import { ComplaintsModule } from './libro-reclamos/libro-reclamos.module';
+import { TermsModule } from './terms/terms.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -46,6 +47,7 @@ import { CsrfGuard } from './auth/csrf/csrf.guard';
     NotificationsModule,
     ConsultaModule,
     ComplaintsModule,
+    TermsModule,
   ],
   controllers: [],
   providers: [

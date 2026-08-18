@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderStatusFilter } from './dto/find-orders-query.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { Prisma } from '@prisma/client';
@@ -47,9 +48,10 @@ export class OrdersService {
       throw new UnauthorizedException('Debes indicar si es boleta o factura');
     }
 
-    const clientId = isAdmin && createOrderDto.client_id
-      ? createOrderDto.client_id
-      : Number(userId);
+    const clientId =
+      isAdmin && createOrderDto.client_id
+        ? createOrderDto.client_id
+        : Number(userId);
 
     if (!clientId || Number.isNaN(clientId)) {
       throw new UnauthorizedException('No se pudo determinar el cliente');
@@ -63,7 +65,7 @@ export class OrdersService {
           data: {
             client_id: clientId,
             document_type_id: createOrderDto.document_type_id,
-            status: 'pending',
+            status: 'NUEVO',
             total: totales,
             terms: createOrderDto.terms,
           },
@@ -207,8 +209,9 @@ export class OrdersService {
     userId?: number | string,
     isAdmin = false,
     pagination?: { page?: string; limit?: string },
+    statusFilter: OrderStatusFilter = 'activo',
   ) {
-    let idFilter = Prisma.sql``;
+    const conditions: Prisma.Sql[] = [];
 
     if (id) {
       if (!/^\d+$/.test(String(id).trim())) {
@@ -219,15 +222,22 @@ export class OrdersService {
           'No tienes permiso para acceder a estas órdenes',
         );
       }
-      idFilter = Prisma.sql`WHERE c.id = ${BigInt(id)}`;
+      conditions.push(Prisma.sql`c.id = ${BigInt(id)}`);
     } else if (!isAdmin && userId !== undefined) {
-      idFilter = Prisma.sql`WHERE c.id = ${BigInt(String(userId))}`;
+      conditions.push(Prisma.sql`c.id = ${BigInt(String(userId))}`);
     }
 
-    const page = Math.max(
-      1,
-      Math.trunc(Number(pagination?.page)) || 1,
-    );
+    if (statusFilter === 'activo') {
+      conditions.push(Prisma.sql`o.status != 'anulado'`);
+    } else if (statusFilter === 'anulado') {
+      conditions.push(Prisma.sql`o.status = 'anulado'`);
+    }
+
+    const whereSql = conditions.length
+      ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+      : Prisma.empty;
+
+    const page = Math.max(1, Math.trunc(Number(pagination?.page)) || 1);
     const limit = Math.min(
       100,
       Math.max(1, Math.trunc(Number(pagination?.limit)) || 10),
@@ -262,7 +272,7 @@ export class OrdersService {
       LEFT JOIN articles a ON a.id = oi.article_id
       LEFT JOIN clients c ON c.id = o.client_id
 
-      ${idFilter}
+      ${whereSql}
 
       GROUP BY o.id
       ORDER BY o.created_at DESC, o.id DESC
@@ -272,7 +282,7 @@ export class OrdersService {
       SELECT COUNT(DISTINCT o.id) AS total
       FROM orders o
       LEFT JOIN clients c ON c.id = o.client_id
-      ${idFilter}
+      ${whereSql}
     `,
     ]);
 

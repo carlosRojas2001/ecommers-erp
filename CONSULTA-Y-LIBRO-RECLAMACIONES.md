@@ -85,7 +85,7 @@ src/libro-reclamos/
 ├── libro-reclamos.module.ts          # Módulo NestJS
 ├── dto/
 │   ├── create-libro-reclamo.dto.ts   # DTO de creación
-│   └── update-libro-reclamo.dto.ts   # DTO de actualización
+│   └── update-complaint-status.dto.ts   # DTO de actualización de estado
 ├── entities/
 │   └── libro-reclamo.entity.ts       # Entidad
 ├── events/
@@ -132,7 +132,7 @@ Authorization: Bearer {token}  (opcional)
 | `order` | string | No | - | Número de pedido relacionado |
 | `amount` | string | Sí | Número | Monto reclamado |
 | `type_complaint` | string | Sí | `reclamo` o `queja` | Tipo de reclamación |
-| `observations` | string | No | - | Observaciones adicionales |
+| `observations` | string | No | - | Observación o solución del caso |
 | `recaptcha_token` | string | Sí | - | Token de reCAPTCHA v3 |
 | `evidence` | file | No | JPG/PNG, máx 5MB | Evidencia fotográfica |
 | `signature` | file | No | JPG/PNG/WEBP, máx 5MB | Firma del cliente |
@@ -156,7 +156,7 @@ Authorization: Bearer {token}  (opcional)
 
 | Parámetro | Tipo | Default | Descripción |
 |-----------|------|---------|-------------|
-| `status` | string | - | Filtrar por estado: `pendiente`, `atendido`, `cerrado` |
+| `status` | string | `todos` | Filtrar por estado: `todos`, `nuevo`, `revisado`, `procesado` |
 | `page` | number | 1 | Número de página |
 | `limit` | number | 20 | Registros por página |
 
@@ -177,7 +177,8 @@ Authorization: Bearer {token}  (opcional)
       "description": "Laptop HP",
       "detail_complaint": "No enciende",
       "type_complaint": "reclamo",
-      "status": "pendiente",
+      "status": "nuevo",
+      "observations": "No enciende al conectar el cargador",
       "evidence_path": "http://localhost:3000/storage/complaints/evidence-xxx.jpg",
       "signature_path": "http://localhost:3000/storage/complaints/signature-xxx.png",
       "created_at": "2026-08-11T10:30:00.000Z"
@@ -198,32 +199,33 @@ Authorization: Bearer {token}  (opcional)
 **Body:**
 ```json
 {
-  "status": "atendido"
+  "status": "nuevo",
+  "observations": "Solución adoptada: reinicio de sistema"
 }
 ```
 
 **Estados válidos:**
-- `pendiente` - Reclamo recién registrado
-- `atendido` - Reclamo en proceso de atención
-- `cerrado` - Reclamo resuelto
+- `nuevo` - Reclamo recién registrado
+- `revisado` - Reclamo en proceso de revisión
+- `procesado` - Reclamo resuelto/solucionado
 
 ### Flujo de Creación
 
 ```
 1. Cliente envía formulario con reCAPTCHA
-         ↓
+          ↓
 2. Verificación de reCAPTCHA (Google API)
-         ↓
+          ↓
 3. Subida de archivos (evidencia/firma)
-         ↓
+          ↓
 4. Transacción atómica:
    - Generación de número correlativo (ej: 0001-2026)
    - Inserción en base de datos
-         ↓
+          ↓
 5. Emisión de evento asíncrono
-         ↓
+          ↓
 6. Respuesta al cliente (id, number_complaint, created_at)
-         ↓
+          ↓
 7. (Async) Envío de emails:
    - Confirmación al cliente
    - Notificación interna al equipo
@@ -262,7 +264,6 @@ El sistema genera números correlativos anuales con formato: `{secuencia}-{año}
 | `SMTP_PORT` | Puerto SMTP |
 | `SMTP_SECURE` | SSL/TLS (`true`/`false`) |
 | `SMTP_USER` | Usuario SMTP |
-| `SMTP_PASS` | Contraseña SMTP |
 | `MAIL_FROM` | Remitente |
 | `SUPPORT_EMAIL` | Email de notificaciones internas |
 
@@ -290,6 +291,7 @@ SUPPORT_EMAIL=soporte@tudominio.com
 ### Base de Datos
 
 #### Tabla: complaints
+
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `id` | BigInt (PK) | Identificador único |
@@ -307,15 +309,16 @@ SUPPORT_EMAIL=soporte@tudominio.com
 | `order` | String? | Número de pedido |
 | `amount` | Decimal | Monto reclamado |
 | `type_complaint` | Enum | `reclamo` / `queja` |
-| `observations` | String? | Observaciones |
+| `observations` | String? | Observación o solución del caso |
 | `evidence_path` | String? | Ruta de evidencia |
 | `signature_path` | String? | Ruta de firma |
 | `customer_id` | BigInt? | ID del cliente (si autenticado) |
-| `status` | Enum | `pendiente` / `atendido` / `cerrado` |
+| `status` | Enum | `nuevo` / `revisado` / `procesado` |
 | `date_complaint` | DateTime | Fecha del reclamo |
 | `created_at` | DateTime | Fecha de registro |
 
 #### Tabla: complaint_counters
+
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `year` | Int (PK) | Año |
@@ -341,14 +344,18 @@ curl -X POST http://localhost:3000/complaints \
   -F "evidence=@/ruta/imagen.jpg"
 
 # Listar reclamos (con token admin)
-curl http://localhost:3000/complaints?status=pendiente&page=1&limit=10 \
+curl http://localhost:3000/complaints?status=nuevo&page=1&limit=10 \
+  -H "Authorization: Bearer TU_TOKEN_ADMIN"
+
+# Listar todos los reclamos (sin filtro de status)
+curl http://localhost:3000/complaints?page=1&limit=10 \
   -H "Authorization: Bearer TU_TOKEN_ADMIN"
 
 # Actualizar estado
 curl -X PATCH http://localhost:3000/complaints/1/status \
   -H "Authorization: Bearer TU_TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d '{"status": "atendido"}'
+  -d '{"status": "revisado", "observations": "Se contactó al cliente y se programó reparación"}'
 ```
 
 ---
@@ -388,7 +395,6 @@ Las facturas y boletas se generan al crear una **Orden**. El tipo de comprobante
     }
   ]
 }
-```
 
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|

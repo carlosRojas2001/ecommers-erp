@@ -102,9 +102,7 @@ model articles {
   is_new_for_web                                                                      Boolean?                     @default(false)
   offer_price_percent                                                                 Decimal?                     @default(0.00) @db.Decimal(8, 2)
   has_offer                                                                           Boolean?                     @default(false)
-  slug                                                                                String?                      @unique(map: "UNI", length: 191) @db.Text
-
-
+  slug                                                                                String?                      @unique(map: "UNI",length: 191) @db.Text
   article_images                                                                      article_images[]
   brands                                                                              brands?                      @relation(fields: [brand_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_brand_id_foreign")
   categories                                                                          categories?                  @relation(fields: [category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_category_id_foreign")
@@ -129,8 +127,6 @@ model articles {
   sale_item_serial                                                                    sale_item_serial[]
   visible_articles                                                                    visible_articles[]
   warranties                                                                          warranties[]
-  
-  sub_categories  sub_categories? @relation(fields: [sub_category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "articles_sub_category_id_foreign")
 
   @@index([brand_id], map: "articles_brand_id_foreign")
   @@index([category_id], map: "articles_category_id_foreign")
@@ -252,7 +248,7 @@ model build_pc_tabla {
   created_at            DateTime?               @db.Timestamp(0)
   updated_at            DateTime?               @db.Timestamp(0)
   image_build           String?                 @db.VarChar(255)
-  slug                  String?                 @unique(map: "UNI",length: 191) @db.Text
+  slug                  String?                 @unique(map: "UNI", length: 191) @db.Text
   build_detail_pc_tabla build_detail_pc_tabla[]
   companies             companies               @relation(fields: [company_id], references: [id], onUpdate: Restrict, map: "build_pc_tabla_company_id_foreign")
 
@@ -1934,8 +1930,9 @@ model sc_moviminw {
   sc_glosasnw        sc_glosasnw          @relation(fields: [CIA, ANOPR, MESPR, CODLIB, COMP], references: [CIA, ANOPR, MESPR, CODLIB, COMP], onDelete: Cascade, map: "FK_sc_moviminw")
   sc_plannw          sc_plannw?           @relation(fields: [CIA, CUENTA], references: [CIA, CUENTA], onUpdate: Restrict, map: "sc_moviminw_ibfk_1")
   sc_moviminw_correl sc_moviminw_correl[]
-  @@unique([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL])
+
   @@id([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL, ORDEN])
+   @@unique([CIA, ANOPR, MESPR, CODLIB, COMP, CORREL], map: "FK_sc_moviminw_correl_unique")
   @@index([CODLIB], map: "CODLIB")
   @@index([CIA, CUENTA], map: "IDX_jcmovimi_2")
 }
@@ -2416,10 +2413,9 @@ model sub_categories {
   created_at  DateTime?  @db.Timestamp(0)
   updated_at  DateTime?  @db.Timestamp(0)
   image_url   String?    @db.VarChar(255)
-  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign") 
-  articles    articles[]  
-  @@index([category_id], map: "sub_categories_category_id_foreign")
+  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "sub_categories_category_id_foreign")
 
+  @@index([category_id], map: "sub_categories_category_id_foreign")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -2871,7 +2867,7 @@ model orders {
   client_id        BigInt          @db.UnsignedBigInt
   document_type_id BigInt?         @db.UnsignedBigInt
   total            Decimal         @default(0.00) @db.Decimal(10, 2)
-  status           orders_status?  @default(processing)
+  status           orders_status   @default(NUEVO)
   sale_id          BigInt?         @unique(map: "orders_sale_id_unique") @db.UnsignedBigInt
   is_cancelled     Boolean         @default(false)
   terms            Boolean         @default(false)
@@ -2966,7 +2962,8 @@ model complaints {
   evidence_path     String?                   @db.VarChar(500)
   signature_path    String?                   @db.VarChar(500)
   customer_id       BigInt?                   @db.UnsignedBigInt
-  status            complaints_status         @default(pendiente)
+  status            complaints_status         @default(NUEVO)
+  observation       String?                   @db.Text
   date_complaint    DateTime                  @db.Date
   created_at        DateTime                  @default(now()) @db.Timestamp(0)
   clients           clients?                  @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "fk_complaints_customer")
@@ -2975,14 +2972,11 @@ model complaints {
   @@index([status], map: "idx_complaints_status")
 }
 
-enum orders_status {
-  pending
-  paid
-  processing
-  shipped
-  delivered
-  cancelled
-  procesado
+model terms_conditions {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  title      String   @default("TÃ©rminos y Condiciones") @db.VarChar(150)
+  content    String   @db.Text
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(0)
 }
 
 enum complaints_well_hired {
@@ -2995,8 +2989,16 @@ enum complaints_type_complaint {
   queja
 }
 
+enum orders_status {
+  NUEVO
+  EN_PROCESO
+  FACTURADO
+  ENTREGADO
+}
+
 enum complaints_status {
-  pendiente
-  atendido
-  cerrado
+  NUEVO
+  REVISADO
+  PROCESADO
+  SOLUCIONADO
 }

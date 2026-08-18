@@ -13,7 +13,7 @@ import { ConfigService } from '@nestjs/config';
 export class LibroReclamosService {
   constructor(
     private prisma: PrismaService,
-    private config: ConfigService, 
+    private config: ConfigService,
     private counterService: ComplaintCounterService,
     private storageService: StorageService,
     private recaptchaService: RecaptchaService,
@@ -22,7 +22,10 @@ export class LibroReclamosService {
 
   async create(
     dto: CreateLibroReclamoDto,
-    files: { evidence?: Express.Multer.File[]; signature?: Express.Multer.File[] },
+    files: {
+      evidence?: Express.Multer.File[];
+      signature?: Express.Multer.File[];
+    },
     customerId: number | null,
   ) {
     // 1. reCAPTCHA se valida ANTES de tocar la BD/transacción
@@ -60,7 +63,7 @@ export class LibroReclamosService {
           evidence_path: evidencePath,
           signature_path: signaturePath,
           customer_id: customerId,
-          status: 'pendiente',
+          status: 'NUEVO',
           date_complaint: new Date(),
         },
       });
@@ -81,7 +84,7 @@ export class LibroReclamosService {
   }
 
   async findAll(status?: string, page = 1, limit = 20) {
-    const where :any = status ? { status } : {};
+    const where: any = status ? { status } : {};
     const [data, total] = await Promise.all([
       this.prisma.complaints.findMany({
         where,
@@ -91,7 +94,7 @@ export class LibroReclamosService {
       }),
       this.prisma.complaints.count({ where }),
     ]);
-    
+
     const appUrl = this.config.get<string>('APP_URL');
     //  console.log('APP_URL leído:', appUrl);
     const dataWithFullUrls = data.map((c) => ({
@@ -104,10 +107,25 @@ export class LibroReclamosService {
     return { data: dataWithFullUrls, total, page, limit };
   }
 
-  async updateStatus(id: number, status: 'pendiente' | 'atendido' | 'cerrado') {
+  async updateStatus(
+    id: number,
+    status: 'NUEVO' | 'REVISADO' | 'PROCESADO',
+    observations?: string,
+  ) {
+    const data: {
+      status: 'NUEVO' | 'REVISADO' | 'PROCESADO';
+      observations?: string;
+    } = {
+      status,
+    };
+
+    if (observations !== undefined) {
+      data.observations = observations;
+    }
+
     return this.prisma.complaints.update({
       where: { id },
-      data: { status },
+      data,
     });
   }
 }

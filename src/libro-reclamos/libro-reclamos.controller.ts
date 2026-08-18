@@ -1,5 +1,17 @@
 // src/libro-reclamos/libro-reclamos.controller.ts
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 
@@ -8,6 +20,7 @@ import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { CreateLibroReclamoDto } from './dto/create-libro-reclamo.dto';
+import { UpdateComplaintStatusDto } from './dto/update-complaint-status.dto';
 
 @Controller('complaints')
 export class ComplaintsController {
@@ -16,17 +29,27 @@ export class ComplaintsController {
   @Post()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests/min por IP
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'evidence', maxCount: 1 },
-    { name: 'signature', maxCount: 1 },
-  ]))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'evidence', maxCount: 1 },
+      { name: 'signature', maxCount: 1 },
+    ]),
+  )
   async create(
     @Body() dto: CreateLibroReclamoDto,
-    @UploadedFiles() files: { evidence?: Express.Multer.File[]; signature?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: {
+      evidence?: Express.Multer.File[];
+      signature?: Express.Multer.File[];
+    },
     @Req() req: any,
   ) {
     const customerId = req.user?.id ?? null;
-    const complaint = await this.libroReclamosService.create(dto, files, customerId);
+    const complaint = await this.libroReclamosService.create(
+      dto,
+      files,
+      customerId,
+    );
 
     return {
       id: Number(complaint.id),
@@ -39,13 +62,28 @@ export class ComplaintsController {
 
   @Get()
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async findAll(@Query('status') status?: string, @Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.libroReclamosService.findAll(status, Number(page), Number(limit));
+  async findAll(
+    @Query('status') status?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    return this.libroReclamosService.findAll(
+      status,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async updateStatus(@Param('id') id: string, @Body('status') status: 'pendiente' | 'atendido' | 'cerrado') {
-    return this.libroReclamosService.updateStatus(Number(id), status);
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateComplaintStatusDto,
+  ) {
+    return this.libroReclamosService.updateStatus(
+      Number(id),
+      dto.status,
+      dto.observations,
+    );
   }
 }
