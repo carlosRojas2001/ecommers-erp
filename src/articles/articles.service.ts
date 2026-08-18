@@ -50,6 +50,7 @@ export class ArticlesService {
     const where: any = {
       status: 1,
       venta: true,
+      habilitado_web: true,
       slug: { not: null },
     };
 
