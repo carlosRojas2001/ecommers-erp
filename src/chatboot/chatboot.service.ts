@@ -29,7 +29,35 @@ export class ChatbootService {
     // Limpiar cache expirado cada 5 minutos
     setInterval(() => this.cleanExpiredCache(), 5 * 60 * 1000);
   }
+async consulta(search?: string) {
+  if (!search) {
+    return this.prisma.articles.findMany();
+  }
 
+  const stopwords = ['necesito', 'quiero', 'traeme', 'muchos', 'muchas', 'para', 'con', 'del', 'que','deseo','tienes','tendras','muestrame'];
+
+const palabras = search
+  .toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .split(/\s+/)
+  .filter(p => p.length > 2 && !stopwords.includes(p))
+  .map(p => p.endsWith('es') && p.length > 4 ? p.slice(0, -2) : p.endsWith('s') ? p.slice(0, -1) : p);
+
+  if (palabras.length === 0) {
+    return [];
+  }
+
+  const resultado = await this.prisma.articles.findMany({
+    where: {
+      OR: palabras.flatMap(palabra => [
+        { description: { contains: palabra } }, 
+
+      ]),
+    },
+  });
+
+  return resultado;
+}
   /**
    * Primera consulta: Clasifica, extrae filtros en JSON, busca en BD de forma segura, y resume con IA.
    */
@@ -218,8 +246,11 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
     // 5. Determinar si es búsqueda de productos o PC builds
     let isPcBuild = classification.search_params?.is_pc_build === true;
 
+    // Extraer término de búsqueda: usar el de la clasificación o del mensaje original
+    const searchParams = classification.search_params || {};
+    const searchTerm = (searchParams.search || userMessage || '').toLowerCase();
+
     // Forzar PC build si el término de búsqueda contiene palabras clave de computadoras
-    const searchTerm = (classification.search_params?.search || userMessage || '').toLowerCase();
     if (!isPcBuild && this.pcKeywords.some(k => searchTerm.includes(k))) {
       isPcBuild = true;
     }
@@ -229,7 +260,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
     let total = 0;
 
     if (isPcBuild) {
-      const rawSearch = classification.search_params?.search || userMessage;
+      const rawSearch = searchParams.search || userMessage;
       const pcResult = await this.findPcBuilds({
         search: this.cleanPcSearchTerm(rawSearch),
         page: 1,
@@ -238,8 +269,11 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
       products = pcResult.builds;
       total = pcResult.total;
     } else {
+      // Asegurar que siempre haya un término de búsqueda si el de la clasificación es nulo
+      const effectiveSearch = searchParams.search || this.extractSearchTerm(userMessage);
       const result = await this.findProducts({
-        ...classification.search_params,
+        ...searchParams,
+        search: effectiveSearch,
         page: 1,
         limit: this.ITEMS_PER_PAGE,
       });
@@ -662,5 +696,25 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
         this.queryCache.delete(key);
       }
     }
+  }
+
+  /**
+   * Extract a search term from the user message when the Groq classification
+   * doesn't provide one. Uses the same logic as the consulta method.
+   */
+  private extractSearchTerm(message: string): string {
+    const stopwords = [
+      'necesito', 'quiero', 'traeme', 'muchos', 'muchas', 'para', 'con',
+      'del', 'que', 'deseo', 'tienes', 'tendras', 'muestrame',
+    ];
+
+    const palabras = message
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .split(/\s+/)
+      .filter(p => p.length > 2 && !stopwords.includes(p))
+      .map(p => p.endsWith('es') && p.length > 4 ? p.slice(0, -2) : p.endsWith('s') ? p.slice(0, -1) : p);
+
+    return palabras.length > 0 ? palabras[0] : '';
   }
 }

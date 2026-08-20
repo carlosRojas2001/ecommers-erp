@@ -127,7 +127,7 @@ model articles {
   sale_item_serial                                                                    sale_item_serial[]
   visible_articles                                                                    visible_articles[]
   warranties                                                                          warranties[]
-
+  @@fulltext([description])
   @@index([brand_id], map: "articles_brand_id_foreign")
   @@index([category_id], map: "articles_category_id_foreign")
   @@index([company_type_id], map: "articles_company_type_id_foreign")
