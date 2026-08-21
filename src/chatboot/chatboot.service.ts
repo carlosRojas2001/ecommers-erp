@@ -1,12 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import Groq from 'groq-sdk';
+import { RedisClientType } from 'redis';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 
+
 @Injectable()
 export class ChatbootService {
-
   private groq: Groq;
 
   // Cache de consultas para paginación sin gastar tokens (almacena search_params)
@@ -17,8 +18,9 @@ export class ChatbootService {
   private readonly pcKeywords = ['computadora', 'computador', 'computadoras', 'pc', 'gaming', 'gamer', 'escritorio', 'desktop', 'armada', 'armado', 'pre-armado', 'arma'];
 
   constructor(
+    @Inject('REDIS_CLIENT') private readonly redisClient: RedisClientType,
     private prisma: PrismaService,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {
     const apiKey = this.configService.get<string>('GROQ_API_KEY');
 
@@ -29,104 +31,7 @@ export class ChatbootService {
     // Limpiar cache expirado cada 5 minutos
     setInterval(() => this.cleanExpiredCache(), 5 * 60 * 1000);
   }
-async consulta(search?: string) {
-  if (!search) {
-    return this.prisma.articles.findMany();
-  }
 
-  const stopwords = ['necesito', 'quiero', 'traeme', 'muchos', 'muchas', 'para', 'con', 'del', 'que','deseo','tienes','tendras','muestrame'];
-
-  const palabras = search
-    .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .split(/\s+/)
-    .filter(p => p.length > 2 && !stopwords.includes(p))
-    .map(p => p.endsWith('es') && p.length > 4 ? p.slice(0, -2) : p.endsWith('s') ? p.slice(0, -1) : p);
-
-  if (palabras.length === 0) {
-    return [];
-  }
-
-  const buildBaseWhere = () => {
-    const w: any = { status: 1, venta: true };
-    return w;
-  };
-
-  const execQuery = async (whereClause: any) => {
-    const [articles, total] = await Promise.all([
-      this.prisma.articles.findMany({
-        where: whereClause,
-        take: 10,
-        include: {
-          categories: { select: { id: true, name: true } },
-          brands: { select: { id: true, name: true } },
-        },
-      }),
-      this.prisma.articles.count({ where: whereClause }),
-    ]);
-
-    const formattedProducts = articles.map((article: any) => ({
-      id: Number(article.id),
-      nombre: article.description || '',
-      cod_fab: article.cod_fab || '',
-      precio: Number(article.public_price || 0),
-      marca: article.brands?.name || null,
-      categoria: article.categories?.name || null,
-    }));
-
-    return { products: formattedProducts, total };
-  };
-
-  const term = search.toLowerCase().trim();
-  const where = buildBaseWhere();
-
-  if (term) {
-    where.AND = [{
-      OR: palabras.flatMap((t) => [
-        { description: { contains: t } },
-        { cod_fab: { contains: t } },
-        { categories: { name: { contains: t } } },
-        { brands: { name: { contains: t } } },
-      ]),
-    }];
-  }
-
-  let result = await execQuery(where);
-
-  if (result.total === 0 && term) {
-    const relaxedWhere = buildBaseWhere();
-    result = await execQuery(relaxedWhere);
-  }
-
-  if (result.total === 0 && term && !result.products.length) {
-    const [matchedCategories, matchedBrands] = await Promise.all([
-      this.prisma.categories.findMany({
-        where: { status: 1, OR: palabras.map((t) => ({ name: { contains: t } })) },
-        select: { id: true },
-      }),
-      this.prisma.brands.findMany({
-        where: { status: 1, OR: palabras.map((t) => ({ name: { contains: t } })) },
-        select: { id: true },
-      }),
-    ]);
-
-    const categoryIds = matchedCategories.map((c) => BigInt(c.id));
-    const brandIds = matchedBrands.map((b) => BigInt(b.id));
-
-    if (categoryIds.length > 0 || brandIds.length > 0) {
-      const fallbackWhere = buildBaseWhere();
-      fallbackWhere.AND = [{
-        OR: [
-          ...(categoryIds.length > 0 ? [{ category_id: { in: categoryIds } }] : []),
-          ...(brandIds.length > 0 ? [{ brand_id: { in: brandIds } }] : []),
-        ],
-      }];
-      result = await execQuery(fallbackWhere);
-    }
-  }
-
-  return result.products;
-}
   /**
    * Primera consulta: Clasifica, extrae filtros en JSON, busca en BD de forma segura, y resume con IA.
    */
@@ -233,7 +138,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
     let classification;
     try {
       const groqResponse = await this.groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-20b',
         response_format: { type: 'json_object' },
         messages: [
           {
