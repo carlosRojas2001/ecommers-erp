@@ -91,7 +91,12 @@ export class Chat implements OnModuleInit {
         a.id,
         a.description AS nombre,
         a.public_price AS precio,
-        MAX(i.url) AS imagen,
+        (
+          SELECT i.url
+          FROM article_images i
+          WHERE i.article_id = a.id
+          LIMIT 1
+        ) AS imagen,
         b.name AS marca,
         c.name AS categoria,
         a.slug AS ruta
