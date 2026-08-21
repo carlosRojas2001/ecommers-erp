@@ -80,7 +80,19 @@ export class Chat implements OnModuleInit {
 
      const tokensValidos = await this.filtrarTokensValidos(tokens);
 
-     if (tokensValidos.length === 0) return [];
+   if (tokensValidos.length === 0) {
+        return {
+        message: 'Lo siento, no hay productos disponibles',
+        type: 'product_list',
+        data: [],
+        meta: {
+              total: 0,
+              hasMore: false,
+              nextCursor: null,
+              queryId: null,
+    },
+  };
+}
 
      const booleanQuery = tokensValidos.map(t => `+${t}*`).join(' ');
     
@@ -119,10 +131,9 @@ export class Chat implements OnModuleInit {
      const tipo_de_cambio:any =  await   this.prisma.exchange_rates.findFirst({orderBy: { date: 'desc' }});
      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
      const appURL = this.configService.get<string>('APP_URL');
-
-
+ 
      return {
-             message: data?.length === 0 ?"Lo siento no hay producto disponible"  :"Aqui tienes los resultados " ,
+             message: data?.length === 0 && Array.isArray(data) ?"Lo siento no hay producto disponible"  :"Aqui tienes los resultados " ,
              type: "product_list",
              data: data.map((item:any) => ({
                 ...item,
