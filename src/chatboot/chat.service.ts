@@ -139,7 +139,7 @@ export class Chat implements OnModuleInit {
                 ...item,
                 precio: Number((Number(item?.precio) * Number(tipo_de_cambio?.sale_rate)).toFixed(2)),
                 imagen: appURL + item?.imagen,
-                ruta: frontendUrl + "productos/" + item?.ruta
+      
              })),
              meta:{
               total,
