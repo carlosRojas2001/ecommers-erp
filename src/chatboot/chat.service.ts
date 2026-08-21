@@ -2,9 +2,12 @@ import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { RedisClientType } from "redis";
 import { PrismaService } from "src/prisma/prisma.service";
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class Chat implements OnModuleInit {
+  
+    
 
   constructor(
     @Inject('REDIS_CLIENT')
@@ -30,9 +33,7 @@ export class Chat implements OnModuleInit {
   }
 
   async construirVocabulario() {
-    const filas: any[] = await this.prisma.$queryRaw`
-      SELECT DISTINCT description FROM articles
-    `;
+    const filas: any[] = await this.prisma.$queryRaw`SELECT DISTINCT description FROM articles`;
 
     const vocabulario = new Set<string>();
 
@@ -59,30 +60,23 @@ export class Chat implements OnModuleInit {
   async filtrarTokensValidos(tokens: string[]): Promise<string[]> {
     if (tokens.length === 0) return [];
 
-    const tokensNormalizados = tokens.map(t =>
-      this.normalizarToken(t)
-    );
+    const tokensNormalizados = tokens.map(t => this.normalizarToken(t));
 
-    const resultados = await this.redisClient.smIsMember(
-      'vocabulario:articulos',
-      tokensNormalizados,
-    );
+    const resultados = await this.redisClient.smIsMember( 'vocabulario:articulos',tokensNormalizados,);
 
-    return tokensNormalizados.filter((_, i) => resultados[i]);
-  }
+    return tokensNormalizados.filter((_, i) => resultados[i])}
 
-  async buscarArticulos(queryOriginal: string, req:any) {
-     const tokens = queryOriginal
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(t => t.length > 2)
-      .map(t => this.normalizarToken(t));
+  async buscarArticulos(queryOriginal: string) {
+
+    const limit = 12;
+    
+     const tokens = queryOriginal.toLowerCase().split(/\s+/).filter(t => t.length > 2).map(t => this.normalizarToken(t));
 
      const tokensValidos = await this.filtrarTokensValidos(tokens);
 
    if (tokensValidos.length === 0) {
         return {
-        message: 'Lo siento, no hay productos disponibles',
+        message: 'Lo siento, no puedo resolver esa duda',
         type: 'product_list',
         data: [],
         meta: {
@@ -98,7 +92,7 @@ export class Chat implements OnModuleInit {
     
       const [ data = [], totalResult ] = await Promise.all([
 
-      await this.prisma.$queryRaw`
+       this.prisma.$queryRaw`
        SELECT
         a.id,
         a.description AS nombre,
@@ -114,23 +108,42 @@ export class Chat implements OnModuleInit {
         a.slug AS ruta
      
        FROM articles a
-       INNER JOIN brands b ON b.id = a.brand_id
-       INNER JOIN article_images i ON i.article_id = a.id 
+       INNER JOIN brands b ON b.id = a.brand_id 
        INNER JOIN categories c ON c.id = a.category_id
        WHERE MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE)
   
-       LIMIT 20`,
+       ORDER BY
+       MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE) DESC,
+       a.id ASC
+       
+       LIMIT ${limit}
+       ` as any,
 
      this.prisma.$queryRaw<{ total: bigint }[]>`
        SELECT COUNT(*) AS total
        FROM articles
        WHERE MATCH(description) AGAINST (${booleanQuery} IN BOOLEAN MODE)`
+
+       
      ])
-  
+   
      const total = Number(totalResult[0]?.total ?? 0);
-     const tipo_de_cambio:any =  await   this.prisma.exchange_rates.findFirst({orderBy: { date: 'desc' }});
-     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+     const tipo_de_cambio:any =  await   this.prisma.exchange_rates.findFirst({orderBy: { date: 'desc' }}); 
      const appURL = this.configService.get<string>('APP_URL');
+     
+    
+
+     const hasMore = total > data.length;
+
+    const queryId = hasMore ? randomUUID() : null;  
+
+     if (queryId) {
+        await this.redisClient.set(`chat:query:${queryId}`,JSON.stringify({booleanQuery}),
+        {
+           EX: 60 * 10,
+        },
+  );
+}
  
      return {
              message: data?.length === 0 && Array.isArray(data) ?"Lo siento no hay producto disponible"  :"Aqui tienes los resultados " ,
@@ -143,15 +156,151 @@ export class Chat implements OnModuleInit {
              })),
              meta:{
               total,
-              hasMore: total > data.length,
+              hasMore,
               nextCursor: null,
-              queryId: null
+               queryId
               }
             }
   }
+
+async verMas(consultaId: string, pagina: number) {
+  const cache = await this.redisClient.get(
+    `chat:query:${consultaId}`,
+  );
+
+  if (!cache) {
+    return {
+      message: 'La consulta ha expirado. Realiza una nueva búsqueda.',
+      type: 'product_list',
+      data: [],
+      meta: {
+        total: 0,
+        hasMore: false,
+        nextCursor: null,
+        queryId: null,
+        pagina: 0,
+      },
+    };
+  }
+
+  const { booleanQuery } = JSON.parse(cache);
+
+  const limit = 12;
+  const offset = (pagina - 1) * limit;
+
+  const [data = [], totalResult] = await Promise.all([
+    this.prisma.$queryRaw`
+      SELECT
+        a.id,
+        a.description AS nombre,
+        a.public_price AS precio,
+
+        (
+          SELECT i.url
+          FROM article_images i
+          WHERE i.article_id = a.id
+          LIMIT 1
+        ) AS imagen,
+
+        b.name AS marca,
+        c.name AS categoria,
+        a.slug AS ruta
+
+      FROM articles a
+
+      INNER JOIN brands b
+        ON b.id = a.brand_id
+
+      INNER JOIN categories c
+        ON c.id = a.category_id
+
+      WHERE MATCH(a.description)
+        AGAINST (${booleanQuery} IN BOOLEAN MODE)
+
+      ORDER BY
+  MATCH(a.description)
+    AGAINST (${booleanQuery} IN BOOLEAN MODE) DESC,
+  a.id ASC
+
+      LIMIT ${limit}
+      OFFSET ${offset}
+    ` as any,
+
+    this.prisma.$queryRaw<{ total: bigint }[]>`
+      SELECT COUNT(*) AS total
+      FROM articles
+      WHERE MATCH(description)
+        AGAINST (${booleanQuery} IN BOOLEAN MODE)
+    `,
+  ]);
+
+  const total = Number(totalResult[0]?.total ?? 0);
+
+  const hasMore = offset + data.length < total;
+
+  const totalPaginas = Math.ceil(total / limit);
+
+  const tipo_de_cambio: any =
+    await this.prisma.exchange_rates.findFirst({
+      orderBy: {
+        date: 'desc',
+      },
+    });
+
+  const appURL =
+    this.configService.get<string>('APP_URL');
+
+  return {
+    message:
+      data.length === 0
+        ? 'No hay más productos'
+        : 'Aquí tienes más resultados',
+
+    type: 'product_list',
+
+    data: data.map((item: any) => ({
+      ...item,
+
+      precio: Number(
+        (
+          Number(item.precio) *
+          Number(tipo_de_cambio?.sale_rate)
+        ).toFixed(2)
+      ),
+
+      imagen: item.imagen
+        ? appURL + item.imagen
+        : null,
+    })),
+
+    meta: {
+      total,
+      hasMore,
+      queryId: hasMore ? consultaId : null,
+      pagina,
+      totalPaginas,
+    },
+  };
+}
 }
 
 
 
     //  ORDER BY relevancia DESC
 //    MATCH(description) AGAINST (${booleanQuery} IN BOOLEAN MODE) AS relevancia
+
+// {
+//   "data": [
+//     { "id": 8865 },
+//     { "id": 8866 },
+//     { "id": 8867 },
+//     { "id": 8868 },
+//     { "id": 8869 }
+//   ],
+//   "meta": {
+//     "total": 58,
+//     "hasMore": true,
+//     "nextCursor": "8869",
+//     "queryId": "f4c26370-0eed-4993-b0ad-e3cf2358e94f"
+//   }
+// }
