@@ -91,7 +91,7 @@ export class Chat implements OnModuleInit {
         a.id,
         a.description AS nombre,
         a.public_price AS precio,
-        i.url AS imagen,
+        MAX(i.url) AS imagen,
         b.name AS marca,
         c.name AS categoria,
         a.slug AS ruta
@@ -122,7 +122,7 @@ export class Chat implements OnModuleInit {
              data: data.map((item:any) => ({
                 ...item,
                 precio: Number((Number(item?.precio) * Number(tipo_de_cambio?.sale_rate)).toFixed(2)),
-                imagen: appURL + item?.imagen[0],
+                imagen: appURL + item?.imagen,
                 ruta: frontendUrl + "productos/" + item?.ruta
              })),
              meta:{
