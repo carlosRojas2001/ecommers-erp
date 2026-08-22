@@ -100,7 +100,7 @@ export class Chat implements OnModuleInit {
         a.description AS nombre,
           MATCH(a.description) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaDesc,
           MATCH(c.name) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaCategoria,
-            (c.name = UPPER(${queryOriginal})) AS categoriaExacta,
+            (c.name = UPPER(${tokensTexto})) AS categoriaExacta,
         a.public_price AS precio,
         (
           SELECT i.url
