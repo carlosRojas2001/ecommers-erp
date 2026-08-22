@@ -73,6 +73,8 @@ export class Chat implements OnModuleInit {
      const tokens = queryOriginal.toLowerCase().split(/\s+/).filter(t => t.length > 2).map(t => this.normalizarToken(t));
 
      const tokensValidos = await this.filtrarTokensValidos(tokens);
+     const tokensTexto = tokensValidos.join(' ');
+
 
    if (tokensValidos.length === 0) {
         return {
@@ -96,6 +98,9 @@ export class Chat implements OnModuleInit {
        SELECT
         a.id,
         a.description AS nombre,
+          MATCH(a.description) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaDesc,
+          MATCH(c.name) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaCategoria,
+            (c.name = UPPER(${queryOriginal})) AS categoriaExacta,
         a.public_price AS precio,
         (
           SELECT i.url
@@ -110,11 +115,15 @@ export class Chat implements OnModuleInit {
        FROM articles a
        INNER JOIN brands b ON b.id = a.brand_id 
        INNER JOIN categories c ON c.id = a.category_id
-       WHERE MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE)
-  
-       ORDER BY
-       MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE) DESC,
-       a.id ASC
+        WHERE
+        MATCH(c.name) AGAINST (${booleanQuery} IN BOOLEAN MODE)
+        
+          OR  MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE)
+          ORDER BY
+           categoriaExacta DESC,
+          relevanciaCategoria DESC,
+  relevanciaDesc DESC,
+          a.id ASC
        
        LIMIT ${limit}
        ` as any,
@@ -151,7 +160,7 @@ export class Chat implements OnModuleInit {
              data: data.map((item:any) => ({
                 ...item,
                 precio: Number((Number(item?.precio) * Number(tipo_de_cambio?.sale_rate)).toFixed(2)),
-                imagen: appURL + item?.imagen,
+                imagen: item?.imagen ? appURL + item.imagen : null,
       
              })),
              meta:{
