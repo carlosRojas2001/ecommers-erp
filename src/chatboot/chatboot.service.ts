@@ -1,6 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
 import Groq from 'groq-sdk';
-import { RedisClientType } from 'redis';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
@@ -17,8 +16,7 @@ export class ChatbootService {
   private readonly stopWords = ['muestrame', 'muéstrame', 'quiero', 'ver', 'busco', 'en', 'de', 'las', 'los', 'un', 'una', 'con', 'para', 'que', 'ofertas', 'oferta', 'descuento', 'barato', 'precio'];
   private readonly pcKeywords = ['computadora', 'computador', 'computadoras', 'pc', 'gaming', 'gamer', 'escritorio', 'desktop', 'armada', 'armado', 'pre-armado', 'arma'];
 
-  constructor(
-    @Inject('REDIS_CLIENT') private readonly redisClient: RedisClientType,
+  constructor( 
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {
