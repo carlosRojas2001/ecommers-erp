@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import slugify from 'slugify';
+import { Prisma } from '@prisma/client'; 
 
 @Injectable()
 export class ArticlesService {
@@ -120,14 +119,28 @@ export class ArticlesService {
       };
     }
 
-    //  schema original usa 'min_stock'
-    if (inStock) {
-      where.min_stock = { gt: 0 };
+    const stockRows: any[] = await this.prisma.$queryRaw`SELECT article_id FROM v_article_stock_global WHERE saldo > 0`;
+    const inStockIds = stockRows.map(r => BigInt(r.article_id));
+    // Si no hay stock, forzar where imposible para devolver vacío rápido
+    if (inStockIds.length === 0) {
+      where.id = { in: [] };
+    } else {
+      where.id = { in: inStockIds };
+      // Si además se pide exclude, combinar con NOT
+      if (exclude) {
+        where.AND = [...(where.AND || []), { id: { not: BigInt(exclude) } }];
+        // Limpiar where.id.in para no duplicar clave id
+        // Se mantiene el filtro de stock via AND   
+        const stockIn = where.id;
+        delete where.id;
+        where.AND.push({ id: stockIn });
+      }
     }
+    // El param inStock queda deprecado: el filtro es siempre obligatorio para web pública
+    // Si en el futuro se necesita bypass admin, usar ?includeOutOfStock=true
 
-    if (exclude) {
-      where.id = { not: BigInt(exclude) };
-    }
+    // Nota: el bloque if (exclude) anterior ya fue integrado con el filtro de stock
+    // Se deja sin duplicar para no sobrescribir where.id.in
 
     if (nuevos) {
       where.is_new_for_web = true;
