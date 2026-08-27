@@ -8,6 +8,6 @@ import { Chat } from './chat.service';
 @Module({
   imports: [PrismaModule],
   controllers: [ChatbootController],
-  providers: [ChatbootService,Chat],
+  providers: [ChatbootService],
 })
 export class ChatbootModule { }
