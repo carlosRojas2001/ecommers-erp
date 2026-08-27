@@ -93,7 +93,7 @@ export class FavoritesService {
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },
     });
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = exchangeRate ? (Number(exchangeRate.parallel_rate) || Number((exchangeRate as any).parallel_rate) || 0) : 0;
 
     return favorites.map((fav) => {
       const { articles, ...favData } = fav;
@@ -128,7 +128,7 @@ export class FavoritesService {
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },
     });
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = exchangeRate ? (Number(exchangeRate.parallel_rate) || Number((exchangeRate as any).parallel_rate) || 0) : 0;
 
     const { articles, ...favData } = favorite;
     return {

@@ -159,7 +159,7 @@ export class Chat implements OnModuleInit {
              type: "product_list",
              data: data.map((item:any) => ({
                 ...item,
-                precio: Number((Number(item?.precio) * Number(tipo_de_cambio?.sale_rate)).toFixed(2)),
+                precio: Number((Number(item?.precio) * (Number(tipo_de_cambio?.parallel_rate) || Number(tipo_de_cambio?.parallel_rate) || 0)).toFixed(2)),
                 imagen: item?.imagen ? appURL + item.imagen : null,
       
              })),
@@ -273,7 +273,7 @@ async verMas(consultaId: string, pagina: number) {
       precio: Number(
         (
           Number(item.precio) *
-          Number(tipo_de_cambio?.sale_rate)
+          (Number(tipo_de_cambio?.parallel_rate) || Number(tipo_de_cambio?.parallel_rate) || 0)
         ).toFixed(2)
       ),
 

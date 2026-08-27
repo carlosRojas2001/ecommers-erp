@@ -299,7 +299,7 @@ export class ArticlesService {
 });
 
 
-const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+const dollarRate = exchangeRate ? Number(exchangeRate.parallel_rate) : 0;
 
     // ── Resolver nombres de filtros aplicados ─────────────────────────────
     const appliedFilters: { type: string; id: string; name: string }[] = [];
@@ -517,7 +517,7 @@ has_offer: article.has_offer ? 1 : 0,
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },
     });
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = exchangeRate ? Number(exchangeRate.parallel_rate) : 0;
 
     let subCategory: any = null;
     if (matched.sub_category_id) {
@@ -618,7 +618,7 @@ has_offer: article.has_offer ? 1 : 0,
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },
     });
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = exchangeRate ? Number(exchangeRate.parallel_rate) : 0;
 
     if (article) {
       let subCategory: any = null;

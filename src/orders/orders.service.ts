@@ -24,10 +24,10 @@ export class OrdersService {
   private async getDollarRate(): Promise<number> {
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },
-      select: { sale_rate: true },
+      select: { parallel_rate: true },
     });
 
-    return exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    return exchangeRate ? (Number(exchangeRate.parallel_rate) || Number(exchangeRate.parallel_rate) || 0) : 0;
   }
 
   private toSoles(
@@ -527,9 +527,9 @@ export class OrdersService {
       typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
       orderBy: { date: 'desc' },
-      select: { sale_rate: true },
+      select: { parallel_rate: true },
     });
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = exchangeRate ? (Number(exchangeRate.parallel_rate) || Number(exchangeRate.parallel_rate) || 0) : 0;
     const toSoles = (value: unknown, currencyTypeId: unknown) => {
       const amount = Number(value) || 0;
       return String(currencyTypeId) === '2' && dollarRate > 0

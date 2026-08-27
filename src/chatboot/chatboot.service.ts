@@ -458,7 +458,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
         this.prisma.exchange_rates.findFirst({ orderBy: { date: 'desc' } }),
       ]);
 
-      const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+      const dollarRate = exchangeRate ? (Number(exchangeRate.parallel_rate) || Number((exchangeRate as any).sale_rate) || 0) : 0;
 
       const formattedProducts = articles.map((article: any) => {
         const slug = article.slug
@@ -605,7 +605,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
       }),
     ]);
 
-    const dollarRate = exchangeRate ? Number(exchangeRate.sale_rate) : 0;
+    const dollarRate = exchangeRate ? (Number(exchangeRate.parallel_rate) || Number((exchangeRate as any).sale_rate) || 0) : 0;
 
     const formattedBuilds = builds.map((build: any) => {
       const rawPrice = Number(build.total_price) || 0;
