@@ -49,7 +49,7 @@ export class FavoritesService {
         },
       });
       return this.serialize(favorite);
-    } catch (error) { 
+    } catch (error:any) { 
       if (error.code === 'P2002') {
         throw new ConflictException('Este producto ya está en tus favoritos');
       }
@@ -68,7 +68,7 @@ export class FavoritesService {
         },
       });
       return { message: 'Producto eliminado de favoritos' };
-    } catch (error) {
+    } catch (error:any) {
       if (error.code === 'P2025') {
         throw new NotFoundException('El producto no estaba en tus favoritos');
       }
