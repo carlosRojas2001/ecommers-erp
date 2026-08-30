@@ -13,17 +13,23 @@ export class ArticleImageService {
     private configService: ConfigService,
   ) {}
 
-  private async notifyProductRevalidation(): Promise<void> {
+  private async notifyProductRevalidation(slug?: string): Promise<void> {
     const url = this.configService.get<string>('FRONTEND_REVALIDATE_URL');
     const secret = this.configService.get<string>('REVALIDATE_SECRET');
 
     if (!url || !secret) return;
 
+    const hasSlug = typeof slug === 'string' && slug.length > 0;
+
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const response = await fetch(url, {
           method: 'POST',
-          headers: { 'x-revalidate-secret': secret },
+          headers: {
+            'x-revalidate-secret': secret,
+            ...(hasSlug ? { 'Content-Type': 'application/json' } : {}),
+          },
+          ...(hasSlug ? { body: JSON.stringify({ slug }) } : {}),
           signal: AbortSignal.timeout(5000),
         });
 
@@ -35,6 +41,23 @@ export class ArticleImageService {
 
       if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
     }
+  }
+
+  private async getArticleSlug(articleId: bigint): Promise<string | undefined> {
+    try {
+      const article = await this.prisma.articles.findUnique({
+        where: { id: articleId },
+        select: { slug: true },
+      });
+      return article?.slug ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async notifyForArticle(articleId: bigint): Promise<void> {
+    const slug = await this.getArticleSlug(articleId);
+    await this.notifyProductRevalidation(slug);
   }
 
   private formatImageUrl(url: string | null): string | null {
@@ -110,7 +133,7 @@ export class ArticleImageService {
       });
     }
 
-    void this.notifyProductRevalidation();
+    void this.notifyForArticle(articleId);
 
     return {
       ...image,
@@ -209,7 +232,7 @@ async update(
     });
   }
 
-  void this.notifyProductRevalidation();
+  void this.notifyForArticle(image.article_id);
 
   return {
     ...image,
@@ -251,7 +274,7 @@ async setMain(id: string) {
     data: { image_url: updated.url },
   });
 
-  void this.notifyProductRevalidation();
+  void this.notifyForArticle(articleId);
 
   return {
     ...updated,
@@ -297,7 +320,7 @@ async remove(id: string) {
       }
     }
 
-    void this.notifyProductRevalidation();
+    void this.notifyForArticle(image.article_id);
 
     return {
       id: image.id.toString(),

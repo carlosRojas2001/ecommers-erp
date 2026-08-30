@@ -873,17 +873,23 @@ has_offer: article.has_offer ? 1 : 0,
     return ArticlesService.generateArticleSlug(description, id);
   }
 
-  private async notifyProductRevalidation(): Promise<void> {
+  private async notifyProductRevalidation(slug?: string): Promise<void> {
     const url = this.configService.get<string>('FRONTEND_REVALIDATE_URL');
     const secret = this.configService.get<string>('REVALIDATE_SECRET');
 
     if (!url || !secret) return;
 
+    const hasSlug = typeof slug === 'string' && slug.length > 0;
+
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const response = await fetch(url, {
           method: 'POST',
-          headers: { 'x-revalidate-secret': secret },
+          headers: {
+            'x-revalidate-secret': secret,
+            ...(hasSlug ? { 'Content-Type': 'application/json' } : {}),
+          },
+          ...(hasSlug ? { body: JSON.stringify({ slug }) } : {}),
           signal: AbortSignal.timeout(5000),
         });
 
@@ -893,6 +899,24 @@ has_offer: article.has_offer ? 1 : 0,
       }
 
       if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
+  /**
+   * Helper para revalidar un artículo puntual con precalentamiento.
+   * Obtiene el slug desde BD y lo envía en el body del webhook.
+   * Si no hay slug (null/bulk), hace purga genérica sin body.
+   */
+  private async notifyProductRevalidationById(articleId: bigint | number): Promise<void> {
+    try {
+      const article = await this.prisma.articles.findUnique({
+        where: { id: BigInt(articleId) },
+        select: { slug: true },
+      });
+      const slug = article?.slug ?? undefined;
+      await this.notifyProductRevalidation(slug ?? undefined);
+    } catch {
+      await this.notifyProductRevalidation();
     }
   }
 
