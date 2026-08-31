@@ -502,7 +502,7 @@ has_offer: article.has_offer ? 1 : 0,
   }
 
     const article = await this.prisma.articles.findFirst({
-      where: { slug, status: 1, venta: true },
+      where: { slug, status: 1, venta: true, habilitado_web: true },
       include: {
         categories: true,
         brands: true,
@@ -512,6 +512,13 @@ has_offer: article.has_offer ? 1 : 0,
     });
 
     if (!article) throw new NotFoundException(`Artículo con slug "${slug}" no encontrado`);
+
+    // Validar stock > 0 (v_article_stock_global.saldo) - si no hay stock no debe mostrarse en web
+    const stockCheck: any[] = await this.prisma.$queryRaw`SELECT saldo FROM v_article_stock_global WHERE article_id = ${article.id}`;
+    if (!stockCheck[0] || Number(stockCheck[0].saldo) <= 0) {
+      throw new NotFoundException(`Artículo con slug "${slug}" no encontrado`);
+    }
+
     const matched = article;
 
     const exchangeRate = await this.prisma.exchange_rates.findFirst({
@@ -621,6 +628,13 @@ has_offer: article.has_offer ? 1 : 0,
     const dollarRate = exchangeRate ? Number(exchangeRate.parallel_rate) : 0;
 
     if (article) {
+      // Solo mostrar en web si está habilitado, activo, venta habilitada y con stock > 0
+      const isWebVisible = article.status === 1 && article.venta === true && (article as any).habilitado_web === true;
+      if (isWebVisible) {
+        const stockCheck: any[] = await this.prisma.$queryRaw`SELECT saldo FROM v_article_stock_global WHERE article_id = ${article.id}`;
+        if (!stockCheck[0] || Number(stockCheck[0].saldo) <= 0) {
+          // Sin stock -> tratar como no encontrado para web, caer al lookup de combo
+        } else {
       let subCategory: any = null;
       if (article.sub_category_id) {
         subCategory = await this.prisma.sub_categories.findUnique({
@@ -716,9 +730,11 @@ has_offer: article.has_offer ? 1 : 0,
             )
             : 0,
       };
+        }
+      }
     }
 
-    // Si no es artículo, buscar en combos
+    // Si no es artículo o no es visible (habilitado_web=false / sin stock), buscar en combos
     const combo = await this.prisma.build_pc_tabla.findUnique({
       where: { id: BigInt(id) },
       include: {
