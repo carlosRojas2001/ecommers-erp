@@ -59,6 +59,31 @@ export class OrdersService {
 
     const totales = await this.calculateTotales(createOrderDto);
 
+    // Validar disponibilidad antes de crear la orden: habilitado_web, status, venta, saldo
+    // Agrupar cantidades por article_id por si el dto trae duplicados
+    const qtyByArticle = new Map<string, number>();
+    for (const it of createOrderDto.items as any[]) {
+      const key = String(it.article_id);
+      const qty = Number(it.quantity) || 0;
+      if (qty <= 0) throw new BadRequestException(`Cantidad inválida para artículo ${key}`);
+      qtyByArticle.set(key, (qtyByArticle.get(key) || 0) + qty);
+    }
+    for (const [articleIdStr, totalQty] of qtyByArticle.entries()) {
+      const articleId = BigInt(articleIdStr);
+      const article = await this.prisma.articles.findUnique({
+        where: { id: articleId },
+        select: { id: true, status: true, venta: true, habilitado_web: true, description: true },
+      });
+      if (!article) throw new BadRequestException(`Artículo ${articleIdStr} no existe`);
+      if (Number(article.status) !== 1) throw new BadRequestException(`Artículo "${article.description ?? articleIdStr}" no disponible (status inactivo)`);
+      if ((article as any).venta !== true) throw new BadRequestException(`Artículo "${article.description ?? articleIdStr}" no disponible para venta`);
+      if ((article as any).habilitado_web !== true) throw new BadRequestException(`Artículo "${article.description ?? articleIdStr}" no habilitado para web`);
+      const stockRows: any[] = await this.prisma.$queryRaw`SELECT saldo FROM v_article_stock_global WHERE article_id = ${articleId}`;
+      const saldo = stockRows[0] ? Number(stockRows[0].saldo) : 0;
+      if (saldo <= 0) throw new BadRequestException(`Artículo "${article.description ?? articleIdStr}" sin stock`);
+      if (totalQty > saldo) throw new BadRequestException(`Stock insuficiente para "${article.description ?? articleIdStr}". Solicitado: ${totalQty}, disponible: ${saldo}`);
+    }
+
     return this.prisma
       .$transaction(async (tx) => {
         const orders = await tx.orders.create({
@@ -106,6 +131,10 @@ export class OrdersService {
                 id: item.article_id,
               },
             });
+            // Doble chequeo dentro de transacción por carrera: status/venta/habilitado_web
+            if (!article || Number((article as any).status) !== 1 || (article as any).venta !== true || (article as any).habilitado_web !== true) {
+              throw new BadRequestException(`Artículo ${item.article_id} no disponible para venta web`);
+            }
             const unit_price = article?.public_price;
             const subtotal = (Number(unit_price) || 0) * Number(item.quantity);
 
