@@ -25,12 +25,21 @@ export class CategoriesService {
   }
 
   private async getValidSubCategoryIds(): Promise<bigint[]> {
+    const stockRows: any[] = await this.prisma.$queryRaw`SELECT article_id FROM v_article_stock_global WHERE saldo > 0`;
+    const inStockIds = stockRows.map((r) => BigInt(r.article_id));
+    if (inStockIds.length === 0) return [];
     const articles = await this.prisma.articles.findMany({
-      where: { status: 1, venta: true, sub_category_id: { not: null } },
+      where: { status: 1, venta: true, habilitado_web: true, slug: { not: null }, sub_category_id: { not: null }, id: { in: inStockIds } },
       select: { sub_category_id: true },
     });
     const ids = [...new Set(articles.map((a) => a.sub_category_id))];
     return ids.filter(Boolean) as bigint[];
+  }
+
+  private async getInStockIds(): Promise<bigint[] | null> {
+    const stockRows: any[] = await this.prisma.$queryRaw`SELECT article_id FROM v_article_stock_global WHERE saldo > 0`;
+    const ids = stockRows.map((r) => BigInt(r.article_id));
+    return ids;
   }
 
   async create(
@@ -121,10 +130,12 @@ export class CategoriesService {
   async findAll(params: { search?: string }) {
     const { search } = params;
     const validSubIds = await this.getValidSubCategoryIds();
+    const inStockIds = await this.getInStockIds();
+    if (inStockIds && inStockIds.length === 0) return [];
 
     const where: any = {
       status: 1,
-      articles: { some: { status: 1, venta: true } },
+      articles: { some: { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) } },
       // sub_categories: { some: { id: { in: validSubIds } } },
     };
 
@@ -166,10 +177,14 @@ export class CategoriesService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
     const validSubIds = await this.getValidSubCategoryIds();
+    const inStockIds = await this.getInStockIds();
+    if (inStockIds && inStockIds.length === 0) {
+      return { data: [], meta: { total: 0, page: Number(page), limit: Number(limit), totalPages: 0 } };
+    }
 
     const where: any = {
       status: 1,
-      articles: { some: { status: 1, venta: true } },
+      articles: { some: { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) } },
       // sub_categories: { some: { id: { in: validSubIds } } },
     };
 
@@ -224,10 +239,14 @@ export class CategoriesService {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
     const validSubIds = await this.getValidSubCategoryIds();
+    const inStockIds = await this.getInStockIds();
+    if (inStockIds && inStockIds.length === 0) {
+      return { data: [], meta: { total: 0, page: Number(page), limit: Number(limit), totalPages: 0, hasNextPage: false } };
+    }
 
     const where: any = {
       status: 1,
-      articles: { some: { status: 1, venta: true } },
+      articles: { some: { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) } },
       sub_categories: { some: { id: { in: validSubIds } } },
     };
 

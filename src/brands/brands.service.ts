@@ -105,12 +105,19 @@ export class BrandsService {
     };
   }
 
+  private async getInStockIds(): Promise<bigint[] | null> {
+    const stockRows: any[] = await this.prisma.$queryRaw`SELECT article_id FROM v_article_stock_global WHERE saldo > 0`;
+    return stockRows.map((r) => BigInt(r.article_id));
+  }
+
   async findAll(params: { search?: string }) {
     const { search } = params;
+    const inStockIds = await this.getInStockIds();
+    if (inStockIds && inStockIds.length === 0) return [];
 
     const where: any = { 
       status: 1,
-      articles: { some: { status: 1, venta: true } }
+      articles: { some: { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) } }
     };
 
     if (search) {
@@ -136,10 +143,14 @@ export class BrandsService {
     const { page = 1, limit = 10, search } = params;
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
+    const inStockIds = await this.getInStockIds();
+    if (inStockIds && inStockIds.length === 0) {
+      return { data: [], meta: { total: 0, page: Number(page), limit: Number(limit), totalPages: 0 } };
+    }
 
     const where: any = { 
       status: 1,
-      articles: { some: { status: 1, venta: true } }
+      articles: { some: { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) } }
     };
 
     if (search) {
@@ -179,10 +190,14 @@ export class BrandsService {
     const { page = 1, limit = 10, search } = params;
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
+    const inStockIds = await this.getInStockIds();
+    if (inStockIds && inStockIds.length === 0) {
+      return { data: [], meta: { total: 0, page: Number(page), limit: Number(limit), totalPages: 0, hasNextPage: false } };
+    }
 
     const where: any = { 
       status: 1,
-      articles: { some: { status: 1, venta: true } }
+      articles: { some: { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) } }
     };
 
     if (search) {
