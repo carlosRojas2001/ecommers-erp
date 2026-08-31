@@ -20,6 +20,11 @@ import { extname } from 'path';
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
+  @Get('stocks-articles')
+stocks(@Query('article_id') article_id:number){
+    return this.articlesService.stocksArticles(article_id)
+}
+
   @Serialize(ArticleResponseDto)
   @Get()
   findAll(@Query() query: any) {
@@ -92,5 +97,6 @@ findOne(@Param('id') id: string) {
 
   return this.articlesService.findBySlug(id);
 }
+
 
 }

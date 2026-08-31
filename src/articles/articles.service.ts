@@ -931,6 +931,11 @@ has_offer: article.has_offer ? 1 : 0,
   private formatBuildImageUrl(url: string | null): string | null {
     return this.formatImageUrl(url);
   }
-
+  
+async  stocksArticles(id:number){
+      const stockRows: any[] = await this.prisma.$queryRaw`SELECT article_id , saldo FROM v_article_stock_global WHERE article_id = ${id}`;
+      return stockRows[0]
+}
 
 }
+ 
