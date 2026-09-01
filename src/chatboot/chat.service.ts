@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { RedisClientType } from "redis";
 import { PrismaService } from "src/prisma/prisma.service";
 import { randomUUID } from 'crypto';
+import { normalizeToken as normalizeWithDict, getVariants } from './plural-variants';
 
 @Injectable()
 export class Chat implements OnModuleInit {
@@ -21,15 +22,8 @@ export class Chat implements OnModuleInit {
   }
 
   private normalizarToken(token: string): string {
-    token = token.toLowerCase().trim();
-
-    if (token.length <= 3) return token;
-
-    if (token.endsWith('s')) {
-      return token.slice(0, -1);
-    }
-
-    return token;
+    // delega al diccionario plural-variants.ts (soporta singular/plural + sinónimos hw)
+    return normalizeWithDict(token);
   }
 
   async construirVocabulario() {
@@ -72,25 +66,34 @@ export class Chat implements OnModuleInit {
     
      const tokens = queryOriginal.toLowerCase().split(/\s+/).filter(t => t.length > 2).map(t => this.normalizarToken(t));
 
-     const tokensValidos = await this.filtrarTokensValidos(tokens);
-     const tokensTexto = tokensValidos.join(' ');
+      const tokensValidos = await this.filtrarTokensValidos(tokens);
+      const tokensTexto = tokensValidos.join(' ');
 
 
-   if (tokensValidos.length === 0) {
-        return {
-        message: 'Lo siento, no puedo resolver esa duda',
-        type: 'product_list',
-        data: [],
-        meta: {
-              total: 0,
-              hasMore: false,
-              nextCursor: null,
-              queryId: null,
-    },
-  };
-}
+    if (tokensValidos.length === 0) {
+         return {
+         message: 'Lo siento, no puedo resolver esa duda',
+         type: 'product_list',
+         data: [],
+         meta: {
+               total: 0,
+               hasMore: false,
+               nextCursor: null,
+               queryId: null,
+     },
+   };
+ }
 
-     const booleanQuery = tokensValidos.map(t => `+${t}*`).join(' ');
+      // Expandir cada token válido a todas sus variantes singular/plural/sinónimos
+      // para que "rams" encuentre "ram/memorias" y "procesadores" encuentre "procesador/cpu"
+      const booleanQuery = tokensValidos
+        .map(valid => {
+          const variants = Array.from(new Set(getVariants(valid).map(v => v.toLowerCase().trim()).filter(v => v.length > 2))).slice(0, 6);
+          if (variants.length === 1) return `+${variants[0]}*`;
+          // Grupo OR obligatorio: debe contener al menos una variante del concepto
+          return `+(${variants.map(v => `${v}*`).join(' ')})`;
+        })
+        .join(' ');
     
       const [ data = [], totalResult ] = await Promise.all([
 
@@ -172,7 +175,7 @@ export class Chat implements OnModuleInit {
             }
   }
 
-async verMas(consultaId: string, pagina: number) {
+  async verMas(consultaId: string, pagina: number) {
   const cache = await this.redisClient.get(
     `chat:query:${consultaId}`,
   );
@@ -290,7 +293,7 @@ async verMas(consultaId: string, pagina: number) {
       totalPaginas,
     },
   };
-}
+  }
 }
 
 
