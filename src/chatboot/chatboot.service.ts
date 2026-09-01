@@ -350,14 +350,26 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
 
   // ── Métodos privados ──────────────────────────────
 
+  private async getInStockIds(): Promise<bigint[] | null> {
+    try {
+      const stockRows: any[] = await this.prisma.$queryRaw`SELECT article_id FROM v_article_stock_global WHERE saldo > 0`;
+      return stockRows.map((r) => BigInt(r.article_id));
+    } catch {
+      return null;
+    }
+  }
+
   /**
-   * Obtiene marcas y categorías activas en la tienda
+   * Obtiene marcas y categorías activas que realmente tienen artículos visibles
    */
   private async getAvailableFilters() {
     try {
+      const inStockIds = await this.getInStockIds();
+      if (inStockIds && inStockIds.length === 0) return { categories: [], brands: [], pcBuilds: [] };
+      const visibleArticleFilter = { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) };
       const [categories, brands, pcBuilds] = await Promise.all([
-        this.prisma.categories.findMany({ where: { status: 1 }, select: { id: true, name: true } }),
-        this.prisma.brands.findMany({ where: { status: 1 }, select: { id: true, name: true } }),
+        this.prisma.categories.findMany({ where: { status: 1, articles: { some: visibleArticleFilter } }, select: { id: true, name: true } }),
+        this.prisma.brands.findMany({ where: { status: 1, articles: { some: visibleArticleFilter } }, select: { id: true, name: true } }),
         this.prisma.build_pc_tabla.findMany({ where: { status: true }, select: { id: true, name: true } }),
       ]);
       return { categories, brands, pcBuilds };
@@ -399,6 +411,10 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
 
     const skip = (page - 1) * limit;
 
+    // Filtro base visible: igual que categories/brands/sub-categories
+    const inStockIds = await this.getInStockIds();
+    if (inStockIds && inStockIds.length === 0) return { products: [], total: 0 };
+
     const synonymMap: Record<string, string[]> = {
       laptop: ['notebook', 'laptop', 'portatil', 'laptops', 'notebooks'],
       laptops: ['notebook', 'laptop', 'portatil', 'notebooks'],
@@ -419,7 +435,7 @@ NOTA: Cuando el usuario pregunte por PCs armados, computadoras, PC de escritorio
     };
 
     const buildBaseWhere = () => {
-      const w: any = { status: 1, venta: true };
+      const w: any = { status: 1, venta: true, habilitado_web: true, slug: { not: null }, ...(inStockIds && inStockIds.length > 0 ? { id: { in: inStockIds } } : {}) };
       if (categoryId) w.category_id = BigInt(categoryId);
       if (brandId) w.brand_id = BigInt(brandId);
       if (minPrice || maxPrice) {

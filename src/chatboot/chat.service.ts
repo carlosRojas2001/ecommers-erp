@@ -27,7 +27,7 @@ export class Chat implements OnModuleInit {
   }
 
   async construirVocabulario() {
-    const filas: any[] = await this.prisma.$queryRaw`SELECT DISTINCT description FROM articles`;
+    const filas: any[] = await this.prisma.$queryRaw`SELECT DISTINCT description FROM articles WHERE status=1 AND venta=1 AND habilitado_web=1 AND slug IS NOT NULL AND id IN (SELECT article_id FROM v_article_stock_global WHERE saldo > 0)`;
 
     const vocabulario = new Set<string>();
 
@@ -95,49 +95,52 @@ export class Chat implements OnModuleInit {
         })
         .join(' ');
     
-      const [ data = [], totalResult ] = await Promise.all([
+       const [ data = [], totalResult ] = await Promise.all([
 
        this.prisma.$queryRaw`
-       SELECT
-        a.id,
-        a.description AS nombre,
-          MATCH(a.description) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaDesc,
-          MATCH(c.name) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaCategoria,
-            (c.name = UPPER(${tokensTexto})) AS categoriaExacta,
-        a.public_price AS precio,
-        (
-          SELECT i.url
-          FROM article_images i
-          WHERE i.article_id = a.id
-          LIMIT 1
-        ) AS imagen,
-        b.name AS marca,
-        c.name AS categoria,
-        a.slug AS ruta
-     
-       FROM articles a
-       INNER JOIN brands b ON b.id = a.brand_id 
-       INNER JOIN categories c ON c.id = a.category_id
-        WHERE
-        MATCH(c.name) AGAINST (${booleanQuery} IN BOOLEAN MODE)
+        SELECT
+         a.id,
+         a.description AS nombre,
+           MATCH(a.description) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaDesc,
+           MATCH(c.name) AGAINST (${queryOriginal} IN NATURAL LANGUAGE MODE) AS relevanciaCategoria,
+             (c.name = UPPER(${tokensTexto})) AS categoriaExacta,
+         a.public_price AS precio,
+         (
+           SELECT i.url
+           FROM article_images i
+           WHERE i.article_id = a.id
+           LIMIT 1
+         ) AS imagen,
+         b.name AS marca,
+         c.name AS categoria,
+         a.slug AS ruta
+      
+        FROM articles a
+        INNER JOIN brands b ON b.id = a.brand_id 
+        INNER JOIN categories c ON c.id = a.category_id
+         WHERE
+         a.status=1 AND a.venta=1 AND a.habilitado_web=1 AND a.slug IS NOT NULL AND a.id IN (SELECT article_id FROM v_article_stock_global WHERE saldo > 0)
+         AND (
+           MATCH(c.name) AGAINST (${booleanQuery} IN BOOLEAN MODE)
+           OR  MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE)
+         )
+           ORDER BY
+            categoriaExacta DESC,
+           relevanciaCategoria DESC,
+   relevanciaDesc DESC,
+           a.id ASC
         
-          OR  MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE)
-          ORDER BY
-           categoriaExacta DESC,
-          relevanciaCategoria DESC,
-  relevanciaDesc DESC,
-          a.id ASC
-       
-       LIMIT ${limit}
-       ` as any,
+        LIMIT ${limit}
+        ` as any,
 
-     this.prisma.$queryRaw<{ total: bigint }[]>`
-       SELECT COUNT(*) AS total
-       FROM articles
-       WHERE MATCH(description) AGAINST (${booleanQuery} IN BOOLEAN MODE)`
+      this.prisma.$queryRaw<{ total: bigint }[]>`
+        SELECT COUNT(*) AS total
+        FROM articles a
+        WHERE a.status=1 AND a.venta=1 AND a.habilitado_web=1 AND a.slug IS NOT NULL AND a.id IN (SELECT article_id FROM v_article_stock_global WHERE saldo > 0)
+        AND MATCH(a.description) AGAINST (${booleanQuery} IN BOOLEAN MODE)`
 
-       
-     ])
+        
+      ])
    
      const total = Number(totalResult[0]?.total ?? 0);
      const tipo_de_cambio:any =  await   this.prisma.exchange_rates.findFirst({orderBy: { date: 'desc' }}); 
@@ -226,7 +229,8 @@ export class Chat implements OnModuleInit {
       INNER JOIN categories c
         ON c.id = a.category_id
 
-      WHERE MATCH(a.description)
+      WHERE a.status=1 AND a.venta=1 AND a.habilitado_web=1 AND a.slug IS NOT NULL AND a.id IN (SELECT article_id FROM v_article_stock_global WHERE saldo > 0)
+      AND MATCH(a.description)
         AGAINST (${booleanQuery} IN BOOLEAN MODE)
 
       ORDER BY
@@ -240,8 +244,9 @@ export class Chat implements OnModuleInit {
 
     this.prisma.$queryRaw<{ total: bigint }[]>`
       SELECT COUNT(*) AS total
-      FROM articles
-      WHERE MATCH(description)
+      FROM articles a
+      WHERE a.status=1 AND a.venta=1 AND a.habilitado_web=1 AND a.slug IS NOT NULL AND a.id IN (SELECT article_id FROM v_article_stock_global WHERE saldo > 0)
+      AND MATCH(a.description)
         AGAINST (${booleanQuery} IN BOOLEAN MODE)
     `,
   ]);
